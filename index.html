@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Training y Pádel Miramar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b12;
+    --card: #0e121c;
+    --card-2: #151a26;
+    --line: #1e2433;
+    --blue: #3b82f6;
+    --blue-glow: rgba(59, 130, 246, 0.4);
+    --blue-dim: rgba(59, 130, 246, 0.15);
+    --lime: #d2f23a;
+    --lime-glow: rgba(210, 242, 58, 0.4);
+    --lime-dim: rgba(210, 242, 58, 0.12);
+    --white: #f5f5f5;
+    --grey: #8a93a6;
+    --font-display: 'Montserrat', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg) url('hero-banner-padel-bg-blue.png') center/cover no-repeat fixed;
+    color: var(--white); font-family: var(--font-body); line-height: 1.5;
+  }
+  a { color: inherit; text-decoration: none; }
+  button, select, input { font-family: var(--font-body); }
+  
+  select, input {
+    background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; color: var(--white);
+    padding: 12px 14px; font-size: 0.9rem; outline: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  select:focus, input:focus { 
+    border-color: var(--blue);
+    box-shadow: 0 0 12px var(--blue-glow);
+  }
+
+  /* Navbar */
+  nav {
+    display: flex; align-items: center; justify-content: space-between; padding: 14px 5vw;
+    background: rgba(8, 11, 18, 0.85); backdrop-filter: blur(12px); border-bottom: 2px solid var(--blue);
+    position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 14px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+  }
+  .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .brand-icon {
+    width: 68px; height: 68px; margin: -9px 0; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; position: relative; z-index: 2;
+  }
+  @media(min-width:640px) { .brand-icon { width: 118px; height: 118px; margin: -19px 0; } }
+  .brand-name { font-family: var(--font-display); font-weight: 700; font-size: 0.68rem; line-height: 1.3; color: var(--blue); letter-spacing: 0.02em; white-space: nowrap; }
+  .brand-name span { display: block; color: var(--white); font-size: 1rem; font-weight: 900; letter-spacing: 0.005em; }
+  @media(min-width:640px) { .brand-name { font-size: 0.8rem; letter-spacing: 0.03em; } .brand-name span { font-size: 1.22rem; } }
+
+  .nav-toggle {
+    display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; flex-shrink: 0;
+    border-radius: 10px; border: 1px solid var(--line); background: var(--card-2); color: var(--white); cursor: pointer;
+  }
+  .nav-toggle:hover { border-color: var(--blue); color: var(--blue); }
+  @media(min-width:920px) { .nav-toggle { display: none; } }
+
+  .navlinks {
+    display: none; flex-direction: column; width: 100%; gap: 2px; font-weight: 700; font-size: 0.85rem;
+    color: var(--white); letter-spacing: 0.05em; position: absolute; top: 100%; left: 0; right: 0;
+    background: rgba(8, 11, 18, 0.98); backdrop-filter: blur(12px); border-bottom: 2px solid var(--blue);
+    padding: 6px 5vw 16px; box-shadow: 0 14px 30px rgba(0,0,0,0.5);
+  }
+  .navlinks.open { display: flex; }
+  .navlinks a { position: relative; padding: 14px 2px; border-bottom: 1px solid var(--line); transition: color 0.2s ease; }
+  .navlinks a:last-child { border-bottom: none; }
+  .navlinks a.active, .navlinks a:hover { color: var(--blue); }
+  .navlinks a.active::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px;
+    background: var(--blue); border-radius: 2px; box-shadow: 0 0 8px var(--blue-glow);
+  }
+  @media(min-width:920px) {
+    nav { padding: 16px 5vw; }
+    .navlinks {
+      display: flex; flex-direction: row; position: static; width: auto; gap: 30px; padding: 0;
+      background: none; border: none; box-shadow: none; backdrop-filter: none;
+    }
+    .navlinks a { padding: 0 0 9px; border-bottom: none; }
+  }
+
+  /* Hero: foto de fondo a pantalla completa. En mobile usamos un recorte
+     de la imagen centrado en la paleta/pelota/pasto, porque la foto original
+     es muy panorámica y en pantallas angostas queda mayormente el fondo negro. */
+  .hero-container {
+    position: relative;
+    background: linear-gradient(180deg, rgba(8,11,18,0.3) 0%, rgba(8,11,18,0.92) 80%, var(--bg) 100%),
+                url('hero-banner-mobile.png') center/cover no-repeat;
+    padding: 90px 5vw 90px;
+    min-height: 520px;
+    display: flex;
+    align-items: flex-end;
+    border-bottom: 2px solid var(--blue);
+    overflow: hidden;
+  }
+  @media(min-width:640px) { .hero-container { padding: 140px 5vw 120px; min-height: 640px; align-items: flex-end; } }
+  @media(min-width:920px) {
+    .hero-container {
+      padding: 220px 5vw 190px; min-height: 800px;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(8,11,18,0.3) 0%, rgba(8,11,18,0.92) 80%, var(--bg) 100%),
+                  url('hero-banner.png') center/cover no-repeat;
+    }
+  }
+  
+  /* AQUÍ SE QUITÓ EL DIFUMINADO AMARILLO */
+  .hero-container::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.12) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero { max-width: 1300px; margin: 0 auto; width: 100%; position: relative; z-index: 2; }
+
+  .hero-eyebrow { 
+    font-family: var(--font-display); font-weight: 800; color: var(--lime); font-size: 0.72rem; 
+    letter-spacing: 0.13em; text-transform: uppercase; margin-bottom: 10px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  @media(min-width:640px) { .hero-eyebrow { font-size: 0.95rem; letter-spacing: 0.15em; margin-bottom: 14px; } }
+  .hero-eyebrow::before {
+    content: ''; display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--lime); box-shadow: 0 0 10px var(--lime-glow);
+  }
+  .hero-title { font-family: var(--font-display); font-weight: 900; font-size: clamp(1.9rem, 8vw, 4.4rem); line-height: 1.05; letter-spacing: -0.01em; color: var(--white); }
+  @media(min-width:640px) { .hero-title { line-height: 1.0; } }
+  .hero-title .blue { 
+    color: var(--blue); display: block; margin-top: 4px; 
+    text-shadow: 0 0 25px rgba(59, 130, 246, 0.35);
+  }
+  .hero-desc { margin-top: 14px; color: #c3cadb; font-size: 0.88rem; max-width: 48ch; line-height: 1.5; font-weight: 400; }
+  @media(min-width:640px) { .hero-desc { margin-top: 22px; font-size: 1.08rem; line-height: 1.6; } }
+
+  .hero-cta { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+  @media(min-width:640px) { .hero-cta { gap: 16px; margin-top: 36px; } }
+  @media(max-width:520px) { .hero-cta .btn { flex: 1 1 auto; padding: 11px 14px; font-size: 0.68rem; gap: 8px; } }
+  
+  /* REDISEÑO DE BOTONES / BUTTON STYLES IMPROVED */
+  .btn {
+    font-family: var(--font-display);
+    font-weight: 800; font-size: 0.88rem; padding: 15px 30px; border-radius: 12px; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 12px; 
+    transition: all .25s cubic-bezier(0.16, 1, 0.3, 1); text-transform: uppercase; letter-spacing: 0.05em;
+    position: relative; overflow: hidden; z-index: 1;
+  }
+  .btn:active { transform: translateY(1px) scale(0.98); }
+  
+  /* Botón Primario: Amarillo Lima Pádel con Glow Dynamic */
+  .btn-primary { 
+    background: linear-gradient(135deg, #d9f542 0%, #bada28 100%); 
+    color: #07090e; 
+    box-shadow: 0 4px 20px rgba(210, 242, 58, 0.35), inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .btn-primary:hover { 
+    transform: translateY(-3px) scale(1.02); 
+    box-shadow: 0 8px 30px rgba(210, 242, 58, 0.55), inset 0 1px 0 rgba(255,255,255,0.6);
+    background: linear-gradient(135deg, #e3fd52 0%, #c4e52d 100%);
+  }
+  .btn-primary svg { transition: transform 0.25s ease; }
+  .btn-primary:hover svg { transform: rotate(90deg); }
+
+  /* Botón Secundario / Outline: Azul Eléctrico con Cristal */
+  .btn-outline { 
+    background: rgba(14, 18, 28, 0.7); 
+    color: var(--white); 
+    border: 1.5 solid rgba(59, 130, 246, 0.6); 
+    border-image: linear-gradient(135deg, var(--blue), rgba(59, 130, 246, 0.2)) 1;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 0 15px rgba(59, 130, 246, 0.1);
+  }
+  .btn-outline:hover { 
+    transform: translateY(-3px) scale(1.02);
+    border-color: var(--blue); 
+    color: #ffffff;
+    background: rgba(59, 130, 246, 0.2);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4), inset 0 0 20px rgba(59, 130, 246, 0.25);
+  }
+
+  /* Botón Formulario / Acción Full */
+  .btn-action {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: var(--white);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    width: 100%;
+    margin-top: 10px;
+  }
+  .btn-action:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+    box-shadow: 0 8px 28px rgba(59, 130, 246, 0.6);
+  }
+
+  /* Sections general */
+  section { padding: 40px 5vw; max-width: 1300px; margin: 0 auto; }
+  @media(min-width:640px) { section { padding: 50px 5vw; } }
+  @media(min-width:920px) { section { padding: 65px 5vw; } }
+  .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; border-bottom: 1px solid rgba(30, 36, 51, 0.6); padding-bottom: 16px; }
+  @media(min-width:640px) { .sec-head { margin-bottom: 32px; } }
+  .sec-title { 
+    display: flex; align-items: center; gap: 12px; 
+    font-family: var(--font-display); font-weight: 900; font-size: 1.15rem; letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  @media(min-width:640px) { .sec-title { font-size: 1.4rem; } }
+  .sec-title::before {
+    content: ''; width: 4px; height: 24px; background: linear-gradient(180deg, var(--lime), var(--blue));
+    border-radius: 2px; display: inline-block;
+  }
+  .sec-icon { width: 22px; height: 22px; color: var(--lime); }
+  .sec-link { color: var(--blue); font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+  .sec-link:hover { color: var(--lime); transform: translateX(3px); }
+
+  /* Filter Pills / Tabs */
+  .cat-pills { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .cat-pill {
+    background: var(--card-2); border: 1px solid var(--line); color: var(--grey);
+    font-family: var(--font-display); font-weight: 800; font-size: 0.76rem; letter-spacing: 0.05em;
+    padding: 10px 18px; border-radius: 999px; cursor: pointer; transition: all .2s ease; white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .cat-pill:hover { color: var(--white); border-color: var(--blue); transform: translateY(-1px); }
+  .cat-pill.active { 
+    background: linear-gradient(135deg, rgba(210, 242, 58, 0.25) 0%, rgba(210, 242, 58, 0.05) 100%); 
+    border-color: var(--lime); color: var(--lime); 
+    box-shadow: 0 0 15px rgba(210,242,58,0.25);
+  }
+
+  /* Grid Próximos Partidos Tarjetas Rediseñadas */
+  .partidos-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  @media(min-width:480px) { .partidos-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; } }
+  @media(min-width:768px) { .partidos-grid { gap: 22px; } }
+  .match-card { 
+    background: linear-gradient(145deg, var(--card) 0%, var(--card-2) 100%); 
+    border: 1px solid var(--line); border-radius: 14px; padding: 13px; 
+    display: flex; flex-direction: column; gap: 10px; 
+    position: relative; overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  }
+  @media(min-width:768px) { .match-card { border-radius: 16px; padding: 20px; gap: 18px; } }
+  .match-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--blue), var(--lime));
+    opacity: 0.5; transition: opacity 0.25s;
+  }
+  .match-card:hover { transform: translateY(-4px); border-color: #2b354a; box-shadow: 0 12px 28px rgba(0,0,0,0.4); }
+  .match-card:hover::after { opacity: 1; }
+
+  .match-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.04em; }
+  @media(min-width:768px) { .match-head { font-size: 0.68rem; } }
+  .cat-tag { padding: 4px 10px; border-radius: 20px; border: 1px solid transparent; text-transform: uppercase; font-weight: 800; flex-shrink: 0; letter-spacing: 0.05em; }
+  @media(min-width:768px) { .cat-tag { padding: 5px 12px; } }
+  .match-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+  .match-torneo { color: var(--white); font-weight: 800; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .match-round { color: var(--grey); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; font-size: 0.63rem; }
+  
+  .match-body { 
+    display: flex; align-items: center; justify-content: space-between; padding: 10px 8px; 
+    background: rgba(8, 11, 18, 0.4); border-radius: 10px; border: 1px solid rgba(255,255,255,0.03);
+  }
+  @media(min-width:768px) { .match-body { padding: 14px 10px; border-radius: 12px; } }
+  .team-box { display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center; width: 42%; }
+  @media(min-width:768px) { .team-box { gap: 8px; } }
+  .avatar-pair { display: flex; margin-left: -10px; }
+  .avatar-pair .avatar-ph { 
+    width: 30px; height: 30px; border-radius: 50%; border: 2px solid #1e2433; 
+    background: #141a26; color: var(--lime); display:flex; align-items:center; justify-content:center; 
+    font-size:0.65rem; font-weight:800; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  @media(min-width:768px) { .avatar-pair .avatar-ph { width: 38px; height: 38px; font-size: 0.75rem; } }
+  .avatar-pair .avatar-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  
+  /* VS Icono Estilo Pádel */
+  .vs-badge { 
+    font-family: var(--font-display); font-weight: 900; color: #07090e; font-size: 0.72rem; 
+    background: var(--lime); padding: 4px 6px; border-radius: 7px;
+    box-shadow: 0 0 12px var(--lime-glow); transform: rotate(-3deg);
+  }
+  @media(min-width:768px) { .vs-badge { font-size: 0.82rem; padding: 5px 8px; border-radius: 8px; } }
+  .team-names { font-size: 0.76rem; font-weight: 700; line-height: 1.25; color: #e2e8f0; }
+  @media(min-width:768px) { .team-names { font-size: 0.85rem; line-height: 1.3; } }
+
+  .match-foot { display: flex; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 2px; font-size: 0.7rem; color: var(--grey); }
+  @media(min-width:768px) { .match-foot { padding-top: 14px; margin-top: 4px; font-size: 0.78rem; } }
+  .foot-item { flex: 1; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .foot-item + .foot-item { border-left: 1px solid var(--line); margin-left: 10px; padding-left: 10px; }
+  @media(min-width:768px) { .foot-item { gap: 8px; } .foot-item + .foot-item { margin-left: 14px; padding-left: 14px; } }
+  .foot-item svg { color: var(--lime); flex-shrink: 0; }
+
+
+    .bracket-wrap { 
+      background: var(--card); 
+      border: 1px solid var(--line); 
+      border-radius: 16px; 
+      padding: 16px 12px; 
+      overflow: hidden; 
+      position: relative;
+    }
+    @media(min-width:768px) { .bracket-wrap { border-radius: 20px; padding: 36px 28px; } }
+  .bracket { 
+    display: flex; 
+    flex-direction: row;
+    min-height: 0; 
+    justify-content: space-between; 
+    gap: 0;
+    position: relative;
+    transform-origin: top left;
+  }
+  .round-col { 
+    display: flex; 
+    flex-direction: column; 
+    width: 220px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+  .round-header { 
+    text-align: center; 
+    font-family: var(--font-display);
+    font-size: 0.78rem; 
+    font-weight: 900; 
+    color: var(--blue); 
+    letter-spacing: 0.1em; 
+    text-transform: uppercase; 
+    height: 34px;
+    margin-bottom: 10px;
+    background: var(--card-2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line);
+  }
+  .round-matches {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    flex-grow: 1;
+    gap: 14px;
+  }
+
+  .bracket-svg-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; display: block;
+  }
+
+  .seed-match { 
+    background: #0e121c; /* Usa un color de tarjeta sólido e idéntico para todos */
+    border: 1px solid var(--line); 
+    border-radius: 10px; 
+    height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: border-color 0.2s;
+  }
+  .seed-match:hover { border-color: var(--blue); }
+  .seed-row { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 8px 14px; 
+    font-size: 0.8rem; 
+    font-weight: 600; 
+    min-width: 0;
+  }
+  .seed-row > span { min-width: 0; overflow-wrap: break-word; word-break: break-word; }
+  .seed-row:first-child { border-bottom: 1px solid var(--line); }
+  .seed-num { color: var(--blue); font-weight: 800; font-size: 0.72rem; margin-right: 8px; display: inline-block; width: 14px; }
+  .seed-row.winner { color: var(--lime); font-weight: 800; background: rgba(210, 242, 58, 0.06); }
+  .seed-row.winner .seed-num { color: var(--lime); }
+  .seed-row.bye, .seed-row.tbd { color: var(--grey); font-style: italic; }
+
+  /* Torneos Grid */
+  .torneos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  @media(max-width:1100px){ .torneos-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media(max-width:640px){ .torneos-grid { grid-template-columns: 1fr; gap: 12px; } }
+  .torneo-card {
+    background: linear-gradient(165deg, var(--card) 0%, var(--card-2) 130%);
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px; position: relative; overflow: hidden;
+    transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  }
+  @media(min-width:640px) { .torneo-card { border-radius: 18px; padding: 28px; gap: 18px; } }
+  .torneo-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background: linear-gradient(90deg, var(--blue), var(--lime)); }
+  .torneo-card:hover { transform: translateY(-5px); border-color: #334155; box-shadow: 0 14px 30px rgba(0,0,0,0.4); }
+  .torneo-card h3 { font-size: 1.05rem; font-family: var(--font-display); font-weight: 800; }
+  @media(min-width:640px) { .torneo-card h3 { font-size: 1.25rem; } }
+  .torneo-meta { display: flex; flex-direction: column; gap: 7px; font-size: 0.82rem; color: var(--grey); }
+  @media(min-width:640px) { .torneo-meta { gap: 8px; font-size: 0.85rem; } }
+  .torneo-meta-item { display: flex; align-items: center; gap: 10px; }
+  .torneo-meta-item svg { color: var(--lime); flex-shrink: 0; }
+  .badge { font-size: 0.66rem; font-weight: 800; padding: 4px 9px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  @media(min-width:640px) { .badge { font-size: 0.68rem; padding: 5px 10px; } }
+  .badge-abierto { background: var(--lime-dim); color: var(--lime); border: 1px solid rgba(210,242,58,0.3); }
+  .badge-cerrado { background: rgba(229,72,77,0.15); color: #e5484d; border: 1px solid rgba(229,72,77,0.3); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .chip { font-size: 0.68rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; border: 1px solid transparent; letter-spacing: 0.03em; }
+  @media(min-width:640px) { .chips { gap: 8px; margin-top: 6px; } .chip { font-size: 0.7rem; padding: 5px 12px; } }
+
+  /* Info Cards Footer Grid */
+  .info-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 28px; }
+  @media(min-width:640px) { .info-cards-grid { gap: 20px; margin-top: 45px; } }
+  .info-card { 
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; 
+    display: flex; align-items: center; gap: 14px; transition: transform 0.2s ease;
+  }
+  @media(min-width:640px) { .info-card { border-radius: 16px; padding: 22px; gap: 18px; } }
+  .info-card:hover { transform: translateY(-3px); border-color: var(--blue); }
+  .info-card-icon { 
+    width: 44px; height: 44px; border-radius: 11px; 
+    background: linear-gradient(135deg, var(--card-2) 0%, rgba(59, 130, 246, 0.15) 100%); 
+    border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; 
+    color: var(--lime); flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  @media(min-width:640px) { .info-card-icon { width: 50px; height: 50px; border-radius: 12px; } }
+  .info-card h4 { font-size: 0.82rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-display); }
+  @media(min-width:640px) { .info-card h4 { font-size: 0.88rem; } }
+  .info-card p { font-size: 0.78rem; color: var(--grey); margin-top: 3px; }
+  @media(min-width:640px) { .info-card p { font-size: 0.8rem; } }
+
+  /* Formularios */
+  .inscripcion-wrap { display: grid; grid-template-columns: 1fr; gap: 24px; }
+  @media(min-width:860px){ .inscripcion-wrap { grid-template-columns: 1fr 1.1fr; gap: 36px; } }
+  form.inscripcion { 
+    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); 
+    border: 1px solid var(--line); border-radius: 16px; padding: 18px; 
+    display: flex; flex-direction: column; gap: 14px; 
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  @media(min-width:640px) { form.inscripcion { border-radius: 18px; padding: 28px; gap: 16px; } }
+  .form-row { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media(min-width:520px) { .form-row { grid-template-columns: 1fr 1fr; } }
+  .form-row:has(#insc-cat-field[style*="display: none"]) { grid-template-columns: 1fr; }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field label { font-size: 0.72rem; color: var(--grey); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800; font-family: var(--font-display); }
+
+  .empty-note { color: var(--grey); font-size: 0.9rem; padding: 30px; background: var(--card); border: 1px dashed var(--line); border-radius: 14px; text-align: center; }
+
+  /* Cuenta / login en la nav */
+  .nav-auth { display: flex; align-items: center; gap: 10px; }
+  .btn-auth {
+    font-family: var(--font-display); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em;
+    padding: 10px 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--card-2);
+    color: var(--white); cursor: pointer; text-transform: uppercase; white-space: nowrap;
+  }
+  .btn-auth:hover { border-color: var(--blue); color: var(--blue); }
+  .nav-user { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--grey); }
+  .nav-user b { color: var(--white); }
+
+  /* Modal login / crear cuenta */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(5,7,12,0.78); backdrop-filter: blur(4px);
+    z-index: 1000; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border: 1px solid var(--line);
+    border-radius: 18px; padding: 26px; width: 100%; max-width: 420px; max-height: 88vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6); position: relative;
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--card-2); color: var(--grey); font-size: 1.1rem; line-height: 1; cursor: pointer;
+  }
+  .modal-close:hover { color: var(--white); border-color: var(--blue); }
+  .modal-title { font-family: var(--font-display); font-weight: 900; font-size: 1.1rem; margin-bottom: 18px; padding-right: 30px; }
+  .modal-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+  .modal-tab {
+    flex: 1; padding: 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--card-2);
+    color: var(--grey); font-weight: 800; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer;
+  }
+  .modal-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .modal-form { display: flex; flex-direction: column; gap: 12px; }
+  .modal-form .field input, .modal-form .field select { width: 100%; }
+  .modal-error { color: #ff6b6b; font-size: 0.8rem; font-weight: 600; min-height: 4px; }
+  .modal-note { color: var(--grey); font-size: 0.8rem; }
+
+  /* Buscador de compañero */
+  .buscador-wrap { position: relative; }
+  .buscador-resultados {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--card-2); border: 1px solid var(--line);
+    border-radius: 10px; overflow: hidden; z-index: 20; max-height: 220px; overflow-y: auto; display: none;
+  }
+  .buscador-resultados.open { display: block; }
+  .buscador-item { padding: 11px 14px; font-size: 0.85rem; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+  .buscador-item:hover { background: var(--blue-dim); }
+  .buscador-item small { color: var(--grey); }
+  .companero-elegido {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px;
+    background: var(--lime-dim); border: 1px solid var(--lime); border-radius: 10px; font-size: 0.85rem; font-weight: 700;
+  }
+  .companero-elegido button { background: none; border: none; color: var(--grey); cursor: pointer; font-size: 1rem; }
+  .jugador1-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px;
+    background: var(--blue-dim); border: 1px solid var(--blue); border-radius: 10px; font-size: 0.85rem; font-weight: 700;
+  }
+  .inscripcion-login-gate {
+    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border: 1px solid var(--line); border-radius: 18px;
+    padding: 40px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+
+  /* Parejas anotadas + perfil de jugador/a (mismo patrón que ranking.html) */
+  .table-scroll { overflow-x: auto; }
+  .ranking-table { width: 100%; border-collapse: collapse; }
+  .ranking-table td { padding: 12px 10px; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
+  .ranking-table tr:last-child td { border-bottom: none; }
+  .pareja-jugadores { display: flex; flex-direction: column; gap: 8px; }
+  .jugador-clickable { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: fit-content; }
+  .jugador-clickable:hover .jugador-nombre-click { color: var(--blue); }
+  .jugador-nombre-click { font-weight: 700; }
+
+  .avatar-circle {
+    width: 30px; height: 30px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+    background: #141a26; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 800; color: var(--lime); border: 2px solid var(--line); font-size: 0.75rem;
+  }
+  .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-circle.big { width: 96px; height: 96px; font-size: 2.1rem; }
+
+  .perfil-overlay {
+    position: fixed; inset: 0; background: rgba(8,11,18,0.8); display: none; align-items: flex-end; justify-content: center;
+    z-index: 1100; padding: 0; backdrop-filter: blur(4px);
+  }
+  @media(min-width:640px) { .perfil-overlay { align-items: center; padding: 20px; } }
+  .perfil-card {
+    background: linear-gradient(165deg, var(--card) 0%, var(--card-2) 130%); border: 1px solid var(--line);
+    border-radius: 20px 20px 0 0; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 24px;
+    position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  @media(min-width:640px) { .perfil-card { border-radius: 20px; max-height: 86vh; padding: 32px; } }
+  .perfil-close {
+    position: absolute; top: 16px; right: 16px; background: var(--card-2); border: 1px solid var(--line); color: var(--white);
+    width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1rem; line-height: 1; transition: all 0.2s;
+  }
+  .perfil-close:hover { border-color: var(--blue); color: var(--blue); }
+  .perfil-head { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+  .perfil-nombre { font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; }
+  .perfil-sub { color: var(--grey); font-size: 0.85rem; margin-top: 2px; }
+  .perfil-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 24px; }
+  @media(min-width:640px) { .perfil-stats { gap: 12px; margin-bottom: 28px; } }
+  .perfil-stat { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 4px; text-align: center; }
+  .perfil-stat b { display: block; font-family: var(--font-display); font-size: 1.35rem; color: var(--lime); }
+  .perfil-stat span { font-size: 0.68rem; color: var(--grey); text-transform: uppercase; letter-spacing: 0.04em; }
+  .perfil-label { font-size: 0.72rem; color: var(--grey); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 10px; }
+  .historial-item { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .historial-item:last-child { border-bottom: none; }
+  .historial-item .torneo { font-weight: 700; font-size: 0.92rem; }
+  .historial-item .detalle { font-size: 0.8rem; color: var(--grey); margin-top: 3px; }
+  .historial-item .puesto-tag { color: var(--lime); font-weight: 700; }
+
+  /* Cupos del torneo */
+  .cupo-wrap { margin-top: 12px; }
+  .cupo-texto { font-size: 0.78rem; color: var(--grey); display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .cupo-texto b { color: var(--white); }
+  .cupo-barra { height: 6px; border-radius: 4px; background: var(--card-2); border: 1px solid var(--line); overflow: hidden; }
+  .cupo-barra-fill { height: 100%; border-radius: 4px; background: var(--lime); transition: width 0.3s ease; }
+  .cupo-barra-fill.baja { background: #f59e0b; }
+  .cupo-barra-fill.llena { background: #ef4444; }
+  .cupo-lleno-tag { color: #ef4444; font-weight: 700; }
+
+  footer { 
+    padding: 26px 5vw; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 14px; 
+    border-top: 1px solid var(--line); color: var(--grey); font-size: 0.8rem; background: rgba(8, 11, 18, 0.95);
+    text-align: center;
+  }
+  @media(min-width:640px) { footer { padding: 35px 5vw; justify-content: space-between; font-size: 0.85rem; text-align: left; } }
+  .footer-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--white); font-family: var(--font-display); }
+  .footer-brand svg { color: var(--lime); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">
+    <div class="brand-icon">
+      <img src="logo.png" alt="Training y Pádel Miramar" style="width:100%;height:100%;object-fit:contain;">
+    </div>
+    <div class="brand-name">TRAINING Y<span>PÁDEL MIRAMAR</span></div>
+  </div>
+  <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <div class="navlinks" id="navlinks">
+    <a href="#" class="active">INICIO</a>
+    <a href="#llaves">LLAVE DEL TORNEO</a>
+    <a href="#proximos">PRÓXIMOS PARTIDOS</a>
+    <a href="ranking.html">RANKING</a>
+    <a href="#inscripcion">INSCRIPCIÓN</a>
+  </div>
+  <div class="nav-auth" id="nav-auth"></div>
+</nav>
+
+<!-- Modal de cuenta (login / crear cuenta) -->
+<div class="modal-overlay" id="auth-modal-overlay">
+  <div class="modal-box">
+    <button class="modal-close" id="auth-modal-close" type="button">&times;</button>
+    <div class="modal-title">Tu cuenta de jugador/a</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-login" type="button">Iniciar sesión</button>
+      <button class="modal-tab" id="tab-signup" type="button">Crear cuenta</button>
+    </div>
+
+    <form class="modal-form" id="login-form-modal">
+      <div class="field"><label>Email</label><input type="email" id="login-email" required autocomplete="username"></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="login-password" required autocomplete="current-password"></div>
+      <div class="modal-error" id="login-error"></div>
+      <button type="submit" class="btn btn-primary btn-action">Ingresar</button>
+    </form>
+
+    <form class="modal-form" id="signup-form-modal" style="display:none;">
+      <div class="field"><label>Nombre y apellido</label><input type="text" id="signup-nombre" required></div>
+      <div class="field"><label>Email</label><input type="email" id="signup-email" required autocomplete="username"></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="signup-password" required minlength="6" autocomplete="new-password"></div>
+      <div class="field"><label>Teléfono</label><input type="tel" id="signup-telefono" required placeholder="11 5555-5555"></div>
+      <div class="field"><label>Categoría</label><select id="signup-categoria" required></select></div>
+      <div class="field"><label>Mano hábil</label>
+        <select id="signup-lateralidad" required>
+          <option value="diestro">Diestro</option>
+          <option value="zurdo">Zurdo</option>
+        </select>
+      </div>
+      <div class="field"><label>Género</label>
+        <select id="signup-genero" required>
+          <option value="masculino">Masculino</option>
+          <option value="femenino">Femenino</option>
+        </select>
+      </div>
+      <div class="modal-error" id="signup-error"></div>
+      <div class="modal-note" id="signup-note" style="display:none;"></div>
+      <button type="submit" class="btn btn-primary btn-action">Crear cuenta</button>
+    </form>
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero-container">
+  <div class="hero">
+    <div class="hero-eyebrow">BIENVENIDOS A</div>
+    <h1 class="hero-title">TRAINING Y<span class="blue">PÁDEL MIRAMAR</span></h1>
+    <p class="hero-desc">Viví la pasión del pádel. Torneos, ranking, jugadores y toda la información en un solo lugar.</p>
+    <div class="hero-cta">
+      <a href="#inscripcion" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        INSCRIBIRSE
+      </a>
+      <a href="#torneos" class="btn btn-outline">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        VER TORNEOS
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Sección Llaves Centradas con Conectores -->
+<section id="llaves">
+  <div class="sec-head">
+    <div class="sec-title">
+      LLAVE DEL TORNEO
+    </div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <div class="cat-pills" id="llave-vista-tabs" style="display:none;">
+        <button type="button" class="cat-pill active" id="tab-vista-llave">Llave</button>
+        <button type="button" class="cat-pill" id="tab-vista-parejas">Parejas anotadas</button>
+      </div>
+      <select id="select-torneo"></select>
+    </div>
+  </div>
+  <div class="cat-pills" id="cat-pills-llave" style="margin-bottom:20px;"></div>
+  <div id="llave-content"></div>
+  <div id="parejas-anotadas-content" style="display:none;"></div>
+</section>
+
+<!-- Sección Próximos Partidos -->
+<section id="proximos">
+  <div class="sec-head">
+    <div class="sec-title">
+      PRÓXIMOS PARTIDOS
+    </div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div class="cat-pills" id="cat-pills-proximos"></div>
+    </div>
+  </div>
+  <div class="partidos-grid" id="partidos-grid">
+    <div class="empty-note">Cargando partidos…</div>
+  </div>
+</section>
+
+<!-- Categorías / Torneos -->
+<section id="torneos">
+  <div class="sec-head">
+    <div class="sec-title">TORNEOS Y CATEGORÍAS</div>
+  </div>
+  <div class="torneos-grid" id="torneos-grid"></div>
+</section>
+
+<!-- Sección Formulario e Info Cards -->
+<section id="inscripcion">
+  <div class="sec-head">
+    <div class="sec-title">INSCRIPCIÓN DE PAREJA</div>
+  </div>
+  <div class="inscripcion-login-gate" id="inscripcion-gate">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--blue);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <div id="inscripcion-gate-text" style="max-width:46ch; color:var(--grey); font-size:0.92rem;">Para inscribir tu pareja necesitás una cuenta. Creála o iniciá sesión — te va a pedir tus datos una sola vez.</div>
+    <button type="button" class="btn btn-primary btn-action" id="btn-abrir-inscripcion">Iniciar sesión / Crear cuenta</button>
+  </div>
+
+  <div class="inscripcion-wrap" id="inscripcion-wrap" style="display:none;">
+    <form class="inscripcion" id="insc-form">
+      <div class="jugador1-card" id="insc-jugador1-card"></div>
+
+      <div class="form-row">
+        <div class="field"><label>Torneo</label><select id="insc-torneo" required></select></div>
+        <div class="field" id="insc-cat-field"><label>Categoría</label><select id="insc-categoria" required></select></div>
+      </div>
+
+      <div id="insc-suma-cats" style="display:none;">
+        <div class="modal-note">Se juega en la categoría que sale de sumar la categoría de cada jugador:</div>
+        <div class="jugador1-card" id="insc-cat-j1-display" style="margin-top:8px;"></div>
+        <div class="jugador1-card" id="insc-cat-j2-display" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="field buscador-wrap">
+        <label>Compañero/a (tiene que tener cuenta creada)</label>
+        <input type="text" id="insc-buscar-companero" placeholder="Escribí su nombre..." autocomplete="off">
+        <div class="buscador-resultados" id="insc-buscar-resultados"></div>
+      </div>
+      <div class="companero-elegido" id="insc-companero-elegido" style="display:none;"></div>
+
+      <div class="field"><label>Teléfono de contacto</label><input type="tel" id="insc-telefono" required placeholder="11 5555-5555"></div>
+
+      <div class="modal-error" id="insc-error"></div>
+      <button type="submit" class="btn btn-primary btn-action">Enviar postulación</button>
+    </form>
+  </div>
+
+  <div class="empty-note" id="inscripcion-cerrada-msg" style="display:none;">Por el momento no hay torneos con inscripción abierta. Volvé a revisar más adelante.</div>
+
+  <div class="info-cards-grid">
+    <div class="info-card">
+      <div class="info-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+      <div><h4>CATEGORÍAS</h4><p>7ma, 6ta y 5ta</p></div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div><h4>FORMATO</h4><p>Eliminación directa con repechaje</p></div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 4v16M2 12h20"/></svg></div>
+      <div><h4>CANCHAS</h4><p>4 canchas disponibles</p></div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div>
+      <div><h4>IMPORTANTE</h4><p>Presentarse 15 min antes</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Perfil de jugador/a (parejas anotadas del torneo) -->
+<div class="perfil-overlay" id="perfil-overlay">
+  <div class="perfil-card" id="perfil-card"></div>
+</div>
+
+<footer id="contacto">
+  <div>© 2026 Training y Pádel Miramar. Todos los derechos reservados.</div>
+  <div class="footer-brand">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+    CLUB PADEL CENTER MIRAMAR
+  </div>
+</footer>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL, GENEROS, LATERALIDADES, POSICION_LABELS,
+  TORNEO_GENEROS, getTorneoGeneroLabel, resolverGenerosPareja,
+  uid, roundLabel, loadState, saveState, isAprobada, resolverJugadorId,
+  isCategoriaSuma, getCategoriaLabel, getRondaLabel,
+  crearCuentaJugador, iniciarSesionJugador, cerrarSesionJugador,
+  obtenerMiPerfil, asegurarMiPerfil, buscarJugadoresRegistrados, resolverJugadorDesdePerfil,
+  encontrarJugadorIdPorPerfil, calcularRankingPorCategoria, getJugadorPartidosStats, getCupoInfo
+} from './shared.js?v=14';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let state = null;
+let lastStateJson = null;
+let session = null;
+let miPerfil = null;
+let companeroElegido = null;
+
+function chipHtml(categoria){
+  const rgb = getCategoriaColorRGB(categoria);
+  return `<span class="chip" style="background:rgba(${rgb},0.14);border-color:rgba(${rgb},0.45);color:rgb(${rgb});">${getCategoriaLabel(state,categoria)}</span>`;
+}
+
+function cupoHtml(t){
+  const info = getCupoInfo(t);
+  if(!info) return '';
+  const pct = Math.min(100, Math.round((info.ocupadas / info.cupo) * 100));
+  const clase = info.lleno ? 'llena' : (info.disponibles <= 2 ? 'baja' : '');
+  const texto = info.lleno
+    ? `<span class="cupo-lleno-tag">Cupo completo</span>`
+    : `Quedan <b>${info.disponibles}</b> ${info.disponibles===1 ? 'lugar' : 'lugares'}`;
+  return `
+    <div class="cupo-wrap">
+      <div class="cupo-texto"><span>${texto}</span><span>${info.ocupadas}/${info.cupo} parejas</span></div>
+      <div class="cupo-barra"><div class="cupo-barra-fill ${clase}" style="width:${pct}%;"></div></div>
+    </div>
+  `;
+}
+
+function renderTorneosGrid(){
+  const grid = document.getElementById('torneos-grid');
+  if(!state?.torneos?.length){ grid.innerHTML = '<div class="empty-note">Todavía no hay torneos cargados.</div>'; return; }
+  grid.innerHTML = state.torneos.map(t=>{
+    return `
+      <div class="torneo-card">
+        <div>
+          <span class="badge ${t.inscripcionAbierta ? 'badge-abierto' : 'badge-cerrado'}">${t.inscripcionAbierta ? 'Inscripción Abierta' : 'Inscripción Cerrada'}</span>
+          ${t.genero ? `<span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);">${TORNEO_GENEROS[t.genero]}</span>` : ''}
+        </div>
+        <h3 style="font-family:var(--font-display);">${t.nombre}</h3>
+        <div class="torneo-meta">
+          <div class="torneo-meta-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+            ${escapeHtml(t.fecha)}
+          </div>
+          <div class="torneo-meta-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+            <b>${escapeHtml(t.lugar)}</b>
+          </div>
+        </div>
+        <div class="chips">${t.categorias.map(c=>chipHtml(c)).join('')}</div>
+        ${cupoHtml(t)}
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+const CATEGORIA_COLORS_RGB = {
+  '3ra': '168,85,247',
+  '4ta': '249,115,22',
+  '5ta': '236,72,153',
+  '6ta': '250,204,21',
+  '7ma': '59,130,246',
+  '8va': '34,197,94',
+};
+const CATEGORIA_COLORS_PALETTE = ['234,179,8','168,85,247','236,72,153','56,189,248','34,197,94','249,115,22'];
+function getCategoriaColorRGB(categoria){
+  if(CATEGORIA_COLORS_RGB[categoria]) return CATEGORIA_COLORS_RGB[categoria];
+  let hash = 0;
+  for(const ch of String(categoria)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return CATEGORIA_COLORS_PALETTE[hash % CATEGORIA_COLORS_PALETTE.length];
+}
+function catTagHtml(categoria){
+  const rgb = getCategoriaColorRGB(categoria);
+  return `<span class="cat-tag" style="background:rgba(${rgb},0.14);border-color:rgba(${rgb},0.5);color:rgb(${rgb});">${getCategoriaLabel(state,categoria)}</span>`;
+}
+
+const MESES_ABREV = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+function formatFechaPartido(fecha){
+  if(!fecha) return '';
+  const [y,m,d] = fecha.split('-').map(Number);
+  if(!y || !m || !d) return fecha;
+  return `${String(d).padStart(2,'0')} ${MESES_ABREV[m-1]}`;
+}
+
+function formatCancha(cancha){
+  const t = (cancha || '').trim();
+  if(!t) return '';
+  return /cancha/i.test(t) ? t.toUpperCase() : `CANCHA ${t.toUpperCase()}`;
+}
+
+function dosIniciales(nombre){
+  const partes = (nombre || '').trim().split(/\s+/).filter(Boolean);
+  if(partes.length === 0) return '?';
+  if(partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
+}
+
+function avatarProximoHtml(nombre){
+  const jugador = (state.jugadores || []).find(j => (j.nombre || '').trim().toLowerCase() === (nombre || '').trim().toLowerCase());
+  if(jugador && jugador.foto){
+    return `<div class="avatar-ph avatar-img"><img src="${escapeHtml(jugador.foto)}" alt="${escapeHtml(nombre)}"></div>`;
+  }
+  return `<div class="avatar-ph">${dosIniciales(nombre)}</div>`;
+}
+
+function getPartidosPendientes(){
+  const lista = [];
+  (state.torneos || []).forEach(t=>{
+    (t.partidos || []).forEach(p=>{
+      if(!p.jugado) lista.push({ ...p, torneoNombre: t.nombre });
+    });
+  });
+  lista.sort((a,b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+  return lista;
+}
+
+let catFiltroProximos = 'todas';
+
+function poblarFiltroCategoriaProximos(){
+  const cont = document.getElementById('cat-pills-proximos');
+  const categoriasConPartidos = [...new Set(getPartidosPendientes().map(p=>p.categoria))];
+  const orden = c => {
+    const i = CATEGORIAS.indexOf(c);
+    if(i !== -1) return i;
+    const m = /^suma(\d+)$/.exec(c);
+    return 100 + (m ? Number(m[1]) : 0);
+  };
+  const catsOrdenadas = categoriasConPartidos.sort((a,b)=>orden(a)-orden(b));
+  if(!catsOrdenadas.includes(catFiltroProximos)) catFiltroProximos = 'todas';
+
+  const opciones = [{ v:'todas', l:'TODOS' }, ...catsOrdenadas.map(c=>({ v:c, l:getCategoriaLabel(state,c).toUpperCase() }))];
+  cont.innerHTML = opciones.map(o=>
+    `<button type="button" class="cat-pill${o.v===catFiltroProximos?' active':''}" data-cat="${o.v}">${o.l}</button>`
+  ).join('');
+
+  cont.querySelectorAll('.cat-pill').forEach(btn=>{
+    btn.onclick = () => {
+      catFiltroProximos = btn.dataset.cat;
+      cont.querySelectorAll('.cat-pill').forEach(b=>b.classList.toggle('active', b===btn));
+      renderProximosPartidos();
+    };
+  });
+}
+
+function renderProximosPartidos(){
+  const grid = document.getElementById('partidos-grid');
+  const catFiltro = catFiltroProximos;
+  let partidos = getPartidosPendientes();
+  if(catFiltro !== 'todas') partidos = partidos.filter(p=>p.categoria===catFiltro);
+
+  if(partidos.length === 0){
+    grid.innerHTML = '<div class="empty-note">No hay partidos programados por el momento.</div>';
+    return;
+  }
+
+  grid.innerHTML = partidos.map(p=>{
+    const [nomA1='', nomA2=''] = (p.equipoA||'').split(' / ');
+    const [nomB1='', nomB2=''] = (p.equipoB||'').split(' / ');
+    return `
+      <div class="match-card">
+        <div class="match-head">
+          ${catTagHtml(p.categoria)}
+          <div class="match-meta">
+            ${p.torneoNombre ? `<span class="match-torneo">${escapeHtml(p.torneoNombre)}</span>` : ''}
+            ${p.ronda ? `<span class="match-round">${getRondaLabel(p.ronda)}</span>` : ''}
+          </div>
+        </div>
+        <div class="match-body">
+          <div class="team-box">
+            <div class="avatar-pair">${avatarProximoHtml(nomA1)}${avatarProximoHtml(nomA2)}</div>
+            <div class="team-names">${escapeHtml(p.equipoA)}</div>
+          </div>
+          <div class="vs-badge">VS</div>
+          <div class="team-box">
+            <div class="avatar-pair">${avatarProximoHtml(nomB1)}${avatarProximoHtml(nomB2)}</div>
+            <div class="team-names">${escapeHtml(p.equipoB)}</div>
+          </div>
+        </div>
+        <div class="match-foot">
+          <div class="foot-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+            ${formatFechaPartido(p.fecha)}${p.hora ? ' - ' + p.hora + ' HS' : ''}
+          </div>
+          <div class="foot-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+            ${formatCancha(p.cancha)}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Recordamos el torneo y la categoría que el visitante venía mirando, porque
+// en mobile es común que el navegador "descargue" la pestaña de la memoria
+// cuando pasás a otra y, al volver, la recargue de cero — sin esto, siempre
+// volvía a mostrar el primer torneo de la lista en vez de donde estabas.
+//
+// PERO si sos vos quien recarga la página a propósito (F5 / botón de recargar),
+// sí tiene que volver a mostrar el torneo principal — no quedarse pegado a la
+// última selección para siempre. El navegador informa el "tipo" de navegación,
+// así que lo usamos para distinguir un caso del otro.
+const RECARGA_MANUAL = (() => {
+  try{
+    const nav = performance.getEntriesByType('navigation')[0];
+    return !!nav && nav.type === 'reload';
+  }catch(err){ return false; }
+})();
+
+const STORAGE_KEY_TORNEO = 'padelmiramar:torneoSeleccionado';
+const STORAGE_KEY_CATEGORIA = 'padelmiramar:categoriaLlave';
+function guardarSeleccion(key, value){
+  try{ sessionStorage.setItem(key, value); }catch(err){ /* modo privado u otro bloqueo: seguimos sin persistir */ }
+}
+function leerSeleccion(key){
+  try{ return sessionStorage.getItem(key); }catch(err){ return null; }
+}
+
+let catLlaveActiva = null;
+let vistaLlave = 'llave'; // 'llave' o 'parejas' (esta última sólo si estás anotado/a y aceptado/a en el torneo)
+
+function poblarCategoriaPillsLlave(torneoId){
+  const cont = document.getElementById('cat-pills-llave');
+  const t = state.torneos.find(x=>x.id===torneoId);
+  const cats = t?.categorias || [];
+
+  if(cats.length <= 1){
+    cont.style.display = 'none';
+    cont.innerHTML = '';
+    catLlaveActiva = cats[0] || null;
+    return;
+  }
+
+  cont.style.display = 'flex';
+  if(!cats.includes(catLlaveActiva)){
+    const catGuardada = !RECARGA_MANUAL ? leerSeleccion(STORAGE_KEY_CATEGORIA) : null;
+    catLlaveActiva = (catGuardada && cats.includes(catGuardada)) ? catGuardada : cats[0];
+    guardarSeleccion(STORAGE_KEY_CATEGORIA, catLlaveActiva);
+  }
+  cont.innerHTML = cats.map(c=>
+    `<button type="button" class="cat-pill${c===catLlaveActiva?' active':''}" data-cat="${c}">${getCategoriaLabel(state,c).toUpperCase()}</button>`
+  ).join('');
+  cont.querySelectorAll('.cat-pill').forEach(btn=>{
+    btn.onclick = ()=>{
+      catLlaveActiva = btn.dataset.cat;
+      guardarSeleccion(STORAGE_KEY_CATEGORIA, catLlaveActiva);
+      cont.querySelectorAll('.cat-pill').forEach(b=>b.classList.toggle('active', b===btn));
+      renderVistaLlave();
+    };
+  });
+}
+
+// Sólo puede ver el listado de parejas anotadas quien ya está inscripto Y
+// aceptado en ALGUNA categoría de ese torneo puntual. Si no, ve la llave nomás.
+function estoyAprobadoEnTorneo(torneoId){
+  if(!session || !miPerfil) return false;
+  const miJugadorId = encontrarJugadorIdPorPerfil(state, miPerfil);
+  if(!miJugadorId) return false;
+  const t = state.torneos.find(x=>x.id===torneoId);
+  if(!t) return false;
+  return Object.values(t.parejas || {}).some(lista =>
+    (lista || []).some(p => isAprobada(p) && (p.j1_id === miJugadorId || p.j2_id === miJugadorId))
+  );
+}
+
+function actualizarTabsVista(torneoId){
+  const tabsWrap = document.getElementById('llave-vista-tabs');
+  const puedeVerParejas = estoyAprobadoEnTorneo(torneoId);
+  tabsWrap.style.display = puedeVerParejas ? 'flex' : 'none';
+  if(!puedeVerParejas){
+    vistaLlave = 'llave';
+    document.getElementById('tab-vista-llave').classList.add('active');
+    document.getElementById('tab-vista-parejas').classList.remove('active');
+  }
+}
+
+function renderVistaLlave(){
+  const llaveContent = document.getElementById('llave-content');
+  const parejasContent = document.getElementById('parejas-anotadas-content');
+  if(vistaLlave === 'parejas'){
+    llaveContent.style.display = 'none';
+    parejasContent.style.display = '';
+    renderParejasAnotadas();
+  } else {
+    llaveContent.style.display = '';
+    parejasContent.style.display = 'none';
+    renderLlave();
+  }
+}
+
+function avatarHtml(j, big){
+  const nombre = (j && j.nombre) || '?';
+  const inicial = nombre.trim().charAt(0).toUpperCase();
+  const cls = big ? 'avatar-circle big' : 'avatar-circle';
+  return `<div class="${cls}">${j && j.foto ? `<img src="${escapeHtml(j.foto)}" alt="${escapeHtml(nombre)}">` : inicial}</div>`;
+}
+
+function jugadorClickableHtml(jugadorId, nombreFallback){
+  const j = (state.jugadores || []).find(x=>x.id===jugadorId) || (nombreFallback ? { nombre: nombreFallback } : null);
+  const nombre = (j && j.nombre) || nombreFallback || '?';
+  return `<span class="jugador-clickable" data-jugador="${jugadorId||''}">${avatarHtml(j)}<span class="jugador-nombre-click">${escapeHtml(nombre)}</span></span>`;
+}
+
+function renderParejasAnotadas(){
+  const cont = document.getElementById('parejas-anotadas-content');
+  const t = state.torneos.find(x=>x.id===document.getElementById('select-torneo').value);
+  const cat = catLlaveActiva;
+  if(!t || !cat){ cont.innerHTML = '<div class="empty-note">Elegí un torneo y una categoría.</div>'; return; }
+  const parejas = (t.parejas[cat] || []).filter(isAprobada);
+  if(parejas.length === 0){
+    cont.innerHTML = '<div class="empty-note">Todavía no hay parejas confirmadas en esta categoría.</div>';
+    return;
+  }
+  cont.innerHTML = `
+    <div class="table-scroll">
+      <table class="ranking-table">
+        <tbody>
+          ${parejas.map(p=>`
+            <tr>
+              <td>
+                <div class="pareja-jugadores">
+                  ${jugadorClickableHtml(p.j1_id, p.j1)}
+                  ${jugadorClickableHtml(p.j2_id, p.j2)}
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  cont.querySelectorAll('.jugador-clickable').forEach(el=>{
+    el.onclick = ()=> abrirPerfil(el.dataset.jugador);
+  });
+}
+
+// ---- Perfil de jugador/a (historial), mismo patrón que ranking.html ----
+function abrirPerfil(jugadorId){
+  const j = (state.jugadores || []).find(x=>x.id===jugadorId);
+  if(!j) return;
+
+  const stats = getJugadorPartidosStats(state, j.id);
+  const rankingCat = calcularRankingPorCategoria(state.jugadores || [], j.categoria);
+  const puntos = rankingCat.find(x=>x.id===j.id)?.puntos || 0;
+
+  const historial = (j.historial || []).slice().sort((a,b)=> new Date(b.fecha) - new Date(a.fecha));
+  const historialHtml = historial.length === 0
+    ? '<div class="empty-note">Todavía no jugó torneos con resultado.</div>'
+    : historial.map(h=>{
+        const t = (state.torneos || []).find(tt=>tt.id===h.torneoId);
+        const nombreTorneo = h.torneoNombre || t?.nombre || 'Torneo';
+        let companero = h.companero;
+        if(companero === undefined){
+          const pareja = t ? (t.parejas[h.categoria] || []).find(p=>p.id===h.parejaId) : null;
+          companero = pareja ? (pareja.j1_id === j.id ? pareja.j2 : pareja.j1) : null;
+        }
+        return `
+          <div class="historial-item">
+            <div class="torneo">${escapeHtml(nombreTorneo)} <span style="color:var(--grey);font-weight:500;">— ${getCategoriaLabel(state,h.categoria)}</span></div>
+            <div class="detalle">
+              <span class="puesto-tag">${POSICION_LABELS[h.posicion] || h.posicion}</span>
+              ${companero ? ` · con ${escapeHtml(companero)}` : ''} · +${h.puntos_ganados} pts
+            </div>
+          </div>
+        `;
+      }).join('');
+
+  document.getElementById('perfil-card').innerHTML = `
+    <button class="perfil-close" id="btn-cerrar-perfil">✕</button>
+    <div class="perfil-head">
+      ${avatarHtml(j, true)}
+      <div>
+        <div class="perfil-nombre">${escapeHtml(j.nombre)}</div>
+        <div class="perfil-sub">${getCategoriaLabel(state, j.categoria) || ''}${j.genero ? ' · ' + (GENEROS[j.genero]||j.genero) : ''} · ${LATERALIDADES[j.lateralidad] || ''}</div>
+      </div>
+    </div>
+    <div class="perfil-stats">
+      <div class="perfil-stat"><b>${puntos}</b><span>Puntos ganados</span></div>
+      <div class="perfil-stat"><b>${stats.ganados}</b><span>Partidos ganados</span></div>
+      <div class="perfil-stat"><b>${stats.perdidos}</b><span>Partidos perdidos</span></div>
+    </div>
+    <div>
+      <span class="perfil-label">Historial de torneos</span>
+      ${historialHtml}
+    </div>
+  `;
+
+  document.getElementById('perfil-overlay').style.display = 'flex';
+  document.getElementById('btn-cerrar-perfil').onclick = cerrarPerfil;
+}
+
+function cerrarPerfil(){
+  document.getElementById('perfil-overlay').style.display = 'none';
+}
+
+document.getElementById('perfil-overlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'perfil-overlay') cerrarPerfil();
+});
+
+document.getElementById('tab-vista-llave').onclick = ()=>{
+  vistaLlave = 'llave';
+  document.getElementById('tab-vista-llave').classList.add('active');
+  document.getElementById('tab-vista-parejas').classList.remove('active');
+  renderVistaLlave();
+};
+document.getElementById('tab-vista-parejas').onclick = ()=>{
+  vistaLlave = 'parejas';
+  document.getElementById('tab-vista-parejas').classList.add('active');
+  document.getElementById('tab-vista-llave').classList.remove('active');
+  renderVistaLlave();
+};
+
+function populateSelectors(){
+  const selT = document.getElementById('select-torneo');
+  const inscT = document.getElementById('insc-torneo');
+  const inscC = document.getElementById('insc-categoria');
+  const inscCField = document.getElementById('insc-cat-field');
+
+  selT.innerHTML = state.torneos.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('');
+  const torneoGuardado = !RECARGA_MANUAL ? leerSeleccion(STORAGE_KEY_TORNEO) : null;
+  if(torneoGuardado && state.torneos.some(t=>t.id===torneoGuardado)){
+    selT.value = torneoGuardado;
+  }
+  guardarSeleccion(STORAGE_KEY_TORNEO, selT.value);
+
+  const torneosConInscripcion = state.torneos.filter(t=>t.inscripcionAbierta && !getCupoInfo(t)?.lleno);
+  inscT.innerHTML = torneosConInscripcion.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('');
+
+  function refreshCatOptions(torneoId, target){
+    const t = state.torneos.find(x=>x.id===torneoId);
+    target.innerHTML = (t?.categorias||[]).map(c=>`<option value="${c}">${getCategoriaLabel(state,c)}</option>`).join('');
+    if(target === inscC){
+      const soloUna = (t?.categorias||[]).length <= 1;
+      inscCField.style.display = soloUna ? 'none' : '';
+    }
+  }
+
+  // A diferencia de antes, ya no se le pide a nadie que elija su categoría a mano
+  // acá: como jugador 1 (vos) y jugador 2 (compañero/a) ya tienen cuenta, su
+  // categoría propia sale directo del perfil. Sólo se muestra informativamente.
+  function refreshSumaFields(){
+    const sumaWrap = document.getElementById('insc-suma-cats');
+    if(isCategoriaSuma(inscC.value)){
+      sumaWrap.style.display = 'block';
+      renderCatSumaDisplay();
+    } else {
+      sumaWrap.style.display = 'none';
+    }
+  }
+
+  poblarCategoriaPillsLlave(selT.value);
+  actualizarTabsVista(selT.value);
+  if(torneosConInscripcion.length > 0){
+    refreshCatOptions(inscT.value, inscC);
+    refreshSumaFields();
+  }
+
+  selT.onchange = ()=>{
+    guardarSeleccion(STORAGE_KEY_TORNEO, selT.value);
+    poblarCategoriaPillsLlave(selT.value);
+    actualizarTabsVista(selT.value);
+    renderVistaLlave();
+  };
+  inscT.onchange = ()=>{ refreshCatOptions(inscT.value, inscC); refreshSumaFields(); };
+  inscC.onchange = refreshSumaFields;
+}
+
+function renderCatSumaDisplay(){
+  const d1 = document.getElementById('insc-cat-j1-display');
+  const d2 = document.getElementById('insc-cat-j2-display');
+  if(miPerfil) d1.textContent = `Vos (${miPerfil.nombre}): ${getCategoriaLabel(state, miPerfil.categoria) || 'sin categoría'}`;
+  if(companeroElegido) d2.textContent = `${companeroElegido.nombre}: ${getCategoriaLabel(state, companeroElegido.categoria) || 'sin categoría'}`;
+  else d2.textContent = 'Elegí un compañero/a para ver su categoría';
+}
+
+function teamLabel(team){
+  if(!team) return '- / -';
+  if(team.bye) return 'BYE';
+  return `${team.j1} / ${team.j2}`;
+}
+
+let roundsLlaveActual = null; // rounds del bracket actualmente pintado, para reescalar en resize sin reconstruir todo
+
+function renderLlave(){
+  const t = state.torneos.find(x=>x.id===document.getElementById('select-torneo').value);
+  const cat = catLlaveActiva;
+  const content = document.getElementById('llave-content');
+  if(!t || !cat){ content.innerHTML = '<div class="empty-note">Elegí un torneo y una categoría.</div>'; roundsLlaveActual = null; return; }
+  const rounds = t.brackets[cat];
+  if(!rounds){ content.innerHTML = '<div class="empty-note">Todavía no se generó la llave para esta categoría.</div>'; roundsLlaveActual = null; return; }
+  roundsLlaveActual = rounds;
+
+  let html = `<div class="bracket-wrap" id="bracket-container">
+    <div class="bracket" id="bracket-elm">`;
+
+  rounds.forEach((round, ri)=>{
+    html += `
+      <div class="round-col" data-round="${ri}">
+        <div class="round-header">${roundLabel(ri, rounds.length)}</div>
+        <div class="round-matches">
+          ${round.map((m, idx)=>`
+            <div class="seed-match" id="match-${ri}-${idx}">
+              <div class="seed-row ${m.winner && m.teamA && m.winner.id===m.teamA.id ? 'winner' : ''}">
+                <span><span class="seed-num">${idx*2+1}</span>${teamLabel(m.teamA)}</span>
+              </div>
+              <div class="seed-row ${m.winner && m.teamB && m.winner.id===m.teamB.id ? 'winner' : ''}">
+                <span><span class="seed-num">${idx*2+2}</span>${teamLabel(m.teamB)}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div><svg class="bracket-svg-layer" id="bracket-svg"></svg></div>`;
+  content.innerHTML = html;
+
+  setTimeout(() => {
+    fitBracketToScreen();
+    drawConnectors(rounds);
+  }, 50);
+}
+
+// Escala la llave completa (misma disposición que en PC) para que entre
+// entera en el ancho disponible, sin necesidad de deslizar para el costado.
+function fitBracketToScreen(){
+  const wrap = document.getElementById('bracket-container');
+  const el = document.getElementById('bracket-elm');
+  if(!wrap || !el) return 1;
+
+  // Reseteamos el escalado para medir el tamaño natural (sin achicar) de la llave
+  el.style.transform = 'none';
+  wrap.style.height = 'auto';
+
+  const wrapStyle = getComputedStyle(wrap);
+  const padX = parseFloat(wrapStyle.paddingLeft) + parseFloat(wrapStyle.paddingRight);
+  const padY = parseFloat(wrapStyle.paddingTop) + parseFloat(wrapStyle.paddingBottom);
+  const availableWidth = wrap.clientWidth - padX;
+  const naturalWidth = el.scrollWidth;
+  const naturalHeight = el.scrollHeight;
+
+  const scale = naturalWidth > availableWidth ? availableWidth / naturalWidth : 1;
+
+  el.style.transform = `scale(${scale})`;
+  // Reservamos exactamente el alto que ocupa la llave ya escalada, para que no quede espacio vacío
+  wrap.style.height = (naturalHeight * scale + padY) + 'px';
+
+  return scale;
+}
+
+function drawConnectors(rounds){
+  const svg = document.getElementById('bracket-svg');
+  const container = document.getElementById('bracket-container');
+  if(!svg || !container) return;
+
+  const rectContainer = container.getBoundingClientRect();
+  svg.setAttribute('width', rectContainer.width);
+  svg.setAttribute('height', rectContainer.height);
+  
+  let pathStr = '';
+
+  for(let r = 0; r < rounds.length - 1; r++){
+    const currentRound = rounds[r];
+    for(let m = 0; m < currentRound.length; m++){
+      const currentMatchEl = document.getElementById(`match-${r}-${m}`);
+      const nextMatchEl = document.getElementById(`match-${r+1}-${Math.floor(m/2)}`);
+
+      if(currentMatchEl && nextMatchEl){
+        const r1 = currentMatchEl.getBoundingClientRect();
+        const r2 = nextMatchEl.getBoundingClientRect();
+
+        const x1 = r1.right - rectContainer.left;
+        const y1 = r1.top + r1.height / 2 - rectContainer.top;
+        const x2 = r2.left - rectContainer.left;
+        const y2 = r2.top + r2.height / 2 - rectContainer.top;
+        const xMid = x1 + (x2 - x1) / 2;
+
+        pathStr += `M ${x1} ${y1} L ${xMid} ${y1} L ${xMid} ${y2} L ${x2} ${y2} `;
+      }
+    }
+  }
+
+  svg.innerHTML = `<path d="${pathStr}" fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4 2"/>`;
+}
+
+document.getElementById('insc-form').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const inscError = document.getElementById('insc-error');
+  inscError.textContent = '';
+
+  if(!session || !miPerfil){ inscError.textContent = 'Iniciá sesión primero.'; return; }
+  if(!companeroElegido){ inscError.textContent = 'Elegí un compañero/a con cuenta creada.'; return; }
+
+  const telefono = document.getElementById('insc-telefono').value.trim();
+  const torneoId = document.getElementById('insc-torneo').value;
+  const cat = document.getElementById('insc-categoria').value;
+  const t = state.torneos.find(x=>x.id===torneoId);
+  if(!t || !cat){ return; }
+  if(!t.inscripcionAbierta){ inscError.textContent = 'La inscripción para este torneo ya está cerrada.'; populateSelectors(); return; }
+  if(getCupoInfo(t)?.lleno){ inscError.textContent = 'Este torneo ya completó su cupo de parejas.'; populateSelectors(); return; }
+
+  const esSuma = isCategoriaSuma(cat);
+
+  // El género de cada jugador ya no se pregunta a mano: sale de la cuenta de cada uno.
+  const { generoJ1, generoJ2, error: errorGenero } = resolverGenerosPareja(
+    t.genero, miPerfil.genero, companeroElegido.genero
+  );
+  if(errorGenero){ inscError.textContent = errorGenero; return; }
+  if(t.genero === 'masculino' || t.genero === 'femenino'){
+    if(miPerfil.genero !== t.genero || companeroElegido.genero !== t.genero){
+      inscError.textContent = `Este torneo es ${TORNEO_GENEROS[t.genero].toLowerCase()} y uno de los dos está registrado con otro género.`;
+      return;
+    }
+  }
+
+  t.parejas[cat] = t.parejas[cat] || [];
+  const r1 = resolverJugadorDesdePerfil(state, miPerfil);
+  const r2 = resolverJugadorDesdePerfil(state, companeroElegido);
+
+  const nuevaPareja = {
+    id: uid('p'), j1_id: r1.id, j2_id: r2.id,
+    j1: miPerfil.nombre, j2: companeroElegido.nombre, telefono, estado: 'pendiente'
+  };
+  if(esSuma){ nuevaPareja.cat_j1 = miPerfil.categoria; nuevaPareja.cat_j2 = companeroElegido.categoria; }
+  t.parejas[cat].push(nuevaPareja);
+
+  const submitBtn = this.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  try{
+    await saveState(supabase, state);
+    closeAuthModal();
+    alert('¡Postulación enviada correctamente!');
+    this.reset();
+    companeroElegido = null;
+    renderTorneosGrid();
+  }catch(err){
+    console.error(err);
+    inscError.textContent = 'Error al guardar la inscripción.';
+  }finally{
+    submitBtn.disabled = false;
+  }
+});
+
+// ============================================================
+// Cuentas de jugadores: modal de login / registro (sólo autenticación)
+// ============================================================
+const authOverlay = document.getElementById('auth-modal-overlay');
+const tabLogin = document.getElementById('tab-login');
+const tabSignup = document.getElementById('tab-signup');
+const loginFormModal = document.getElementById('login-form-modal');
+const signupFormModal = document.getElementById('signup-form-modal');
+const inscForm = document.getElementById('insc-form');
+
+document.getElementById('signup-categoria').innerHTML = CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
+
+function mostrarPasoAuth(paso){
+  loginFormModal.style.display = paso === 'login' ? 'flex' : 'none';
+  signupFormModal.style.display = paso === 'signup' ? 'flex' : 'none';
+  tabLogin.classList.toggle('active', paso === 'login');
+  tabSignup.classList.toggle('active', paso === 'signup');
+}
+
+function openAuthModal(){
+  authOverlay.classList.add('open');
+  mostrarPasoAuth('login');
+}
+function closeAuthModal(){ authOverlay.classList.remove('open'); }
+
+document.getElementById('auth-modal-close').onclick = closeAuthModal;
+authOverlay.addEventListener('click', (e)=>{ if(e.target === authOverlay) closeAuthModal(); });
+document.getElementById('btn-abrir-inscripcion').onclick = openAuthModal;
+tabLogin.onclick = ()=> mostrarPasoAuth('login');
+tabSignup.onclick = ()=> mostrarPasoAuth('signup');
+
+loginFormModal.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const errorEl = document.getElementById('login-error');
+  errorEl.textContent = '';
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  try{
+    await iniciarSesionJugador(supabase, email, password);
+    await cargarSesionYPerfil();
+    closeAuthModal();
+    renderInscripcionSection();
+  }catch(err){
+    errorEl.textContent = 'Email o contraseña incorrectos.';
+  }
+});
+
+signupFormModal.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const errorEl = document.getElementById('signup-error');
+  const noteEl = document.getElementById('signup-note');
+  errorEl.textContent = ''; noteEl.style.display = 'none';
+  const datos = {
+    nombre: document.getElementById('signup-nombre').value.trim(),
+    email: document.getElementById('signup-email').value.trim(),
+    password: document.getElementById('signup-password').value,
+    telefono: document.getElementById('signup-telefono').value.trim(),
+    categoria: document.getElementById('signup-categoria').value,
+    lateralidad: document.getElementById('signup-lateralidad').value,
+    genero: document.getElementById('signup-genero').value,
+  };
+  try{
+    const data = await crearCuentaJugador(supabase, datos);
+    if(data.session){
+      await cargarSesionYPerfil();
+      closeAuthModal();
+      renderInscripcionSection();
+    } else {
+      noteEl.style.display = 'block';
+      noteEl.textContent = 'Te mandamos un mail para confirmar tu cuenta. Una vez confirmada, iniciá sesión.';
+      mostrarPasoAuth('login');
+    }
+  }catch(err){
+    console.error(err);
+    errorEl.textContent = err.message?.includes('already registered') ? 'Ese email ya tiene una cuenta.' : 'No se pudo crear la cuenta.';
+  }
+});
+
+// Decide qué mostrar en la sección #inscripcion de la página: el cartel para
+// loguearse, el formulario real (si ya hay sesión), o el aviso de "sin
+// inscripción abierta". Se llama al cargar, al loguearse/desloguearse y cada
+// vez que cambian los torneos.
+function renderInscripcionSection(){
+  const gate = document.getElementById('inscripcion-gate');
+  const wrap = document.getElementById('inscripcion-wrap');
+  const cerrada = document.getElementById('inscripcion-cerrada-msg');
+  if(!state) return;
+  const hayAbiertos = state.torneos.some(t=>t.inscripcionAbierta && !getCupoInfo(t)?.lleno);
+
+  if(!hayAbiertos){
+    gate.style.display = 'none';
+    wrap.style.display = 'none';
+    const hayAbiertosPeroLlenos = state.torneos.some(t=>t.inscripcionAbierta && getCupoInfo(t)?.lleno);
+    cerrada.textContent = hayAbiertosPeroLlenos
+      ? 'Los torneos con inscripción abierta ya completaron su cupo de parejas. Volvé a revisar más adelante.'
+      : 'Por el momento no hay torneos con inscripción abierta. Volvé a revisar más adelante.';
+    cerrada.style.display = 'block';
+    return;
+  }
+  cerrada.style.display = 'none';
+  if(session && miPerfil){
+    gate.style.display = 'none';
+    wrap.style.display = '';
+    prepararFormularioInscripcion();
+  } else {
+    gate.style.display = '';
+    wrap.style.display = 'none';
+  }
+}
+
+function prepararFormularioInscripcion(){
+  document.getElementById('insc-jugador1-card').textContent =
+    `Vos: ${miPerfil.nombre} · ${GENEROS[miPerfil.genero] || ''} · ${getCategoriaLabel(state, miPerfil.categoria) || 'sin categoría'}`;
+  document.getElementById('insc-telefono').value = miPerfil.telefono || '';
+  companeroElegido = null;
+  document.getElementById('insc-companero-elegido').style.display = 'none';
+  document.getElementById('insc-buscar-companero').value = '';
+  populateSelectors();
+}
+
+// Buscador de compañero/a (con debounce)
+let buscarTimeout = null;
+const inputBuscar = document.getElementById('insc-buscar-companero');
+const resultadosBuscar = document.getElementById('insc-buscar-resultados');
+inputBuscar.addEventListener('input', ()=>{
+  clearTimeout(buscarTimeout);
+  const texto = inputBuscar.value;
+  buscarTimeout = setTimeout(async ()=>{
+    try{
+      const resultados = (await buscarJugadoresRegistrados(supabase, texto)).filter(r=>r.id !== session?.user?.id);
+      if(resultados.length === 0){ resultadosBuscar.classList.remove('open'); return; }
+      resultadosBuscar.innerHTML = resultados.map(r=>`
+        <div class="buscador-item" data-id="${r.id}">
+          <span>${escapeHtml(r.nombre)}</span>
+          <small>${getCategoriaLabel(state, r.categoria) || ''}</small>
+        </div>
+      `).join('');
+      resultadosBuscar.classList.add('open');
+      resultadosBuscar.querySelectorAll('.buscador-item').forEach(item=>{
+        item.onclick = ()=>{
+          companeroElegido = resultados.find(r=>r.id === item.dataset.id);
+          document.getElementById('insc-companero-elegido').style.display = 'flex';
+          document.getElementById('insc-companero-elegido').innerHTML =
+            `<span>${escapeHtml(companeroElegido.nombre)}</span><button type="button" id="insc-quitar-companero">&times;</button>`;
+          document.getElementById('insc-quitar-companero').onclick = ()=>{
+            companeroElegido = null;
+            document.getElementById('insc-companero-elegido').style.display = 'none';
+          };
+          inputBuscar.value = '';
+          resultadosBuscar.classList.remove('open');
+          renderCatSumaDisplay();
+        };
+      });
+    }catch(err){ console.error(err); }
+  }, 300);
+});
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.buscador-wrap')) resultadosBuscar.classList.remove('open');
+});
+
+let esAdminActual = false;
+
+function renderNavAuth(){
+  const cont = document.getElementById('nav-auth');
+  if(session && miPerfil){
+    const btnAdmin = esAdminActual ? `<a href="admin.html" class="btn-auth">Panel de administración</a>` : '';
+    cont.innerHTML = `${btnAdmin}<div class="nav-user">Hola, <b>${escapeHtml(miPerfil.nombre.split(' ')[0])}</b></div><button class="btn-auth" id="btn-logout-nav">Cerrar sesión</button>`;
+    document.getElementById('btn-logout-nav').onclick = async ()=>{
+      await cerrarSesionJugador(supabase);
+      session = null; miPerfil = null; esAdminActual = false;
+      renderNavAuth();
+    };
+  } else {
+    cont.innerHTML = `<button class="btn-auth" id="btn-login-nav">Iniciar sesión</button>`;
+    document.getElementById('btn-login-nav').onclick = openAuthModal;
+  }
+}
+
+const TEXTO_GATE_DEFAULT = 'Para inscribir tu pareja necesitás una cuenta. Creála o iniciá sesión — te va a pedir tus datos una sola vez.';
+
+async function cargarSesionYPerfil(){
+  const { data } = await supabase.auth.getSession();
+  session = data.session;
+  document.getElementById('inscripcion-gate-text').textContent = TEXTO_GATE_DEFAULT;
+  if(session){
+    try{
+      miPerfil = await asegurarMiPerfil(supabase, session.user);
+    }catch(err){
+      console.error('No se pudo cargar/crear el perfil de la cuenta:', err);
+      miPerfil = null;
+      document.getElementById('inscripcion-gate-text').textContent =
+        'Iniciaste sesión pero no se pudo cargar tu perfil (' + (err.message || 'error desconocido') + '). Revisá que hayas corrido setup.sql en Supabase.';
+    }
+    // Sólo para mostrar (o no) el botón de "Panel de administración" en el
+    // header — no habilita ningún permiso extra acá, es sólo un atajo visual;
+    // el panel en sí ya valida el acceso por su cuenta al entrar.
+    try{
+      const { data: adminRow } = await supabase.from('admins').select('id').eq('id', session.user.id).maybeSingle();
+      esAdminActual = !!adminRow;
+    }catch(err){
+      console.error('No se pudo chequear si la cuenta es admin:', err);
+      esAdminActual = false;
+    }
+  } else {
+    miPerfil = null;
+    esAdminActual = false;
+  }
+  renderNavAuth();
+}
+
+// En mobile, el navegador dispara "resize" también cuando se esconde/muestra
+// la barra de direcciones al scrollear (ahí sólo cambia el alto de la
+// ventana, no el ancho). Antes esto volvía a armar toda la llave del torneo
+// de cero en cada scroll, y el reset momentáneo a su tamaño real (sin
+// achicar) hacía que la página "saltara" un instante. Ahora: sólo actuamos
+// si cambió el ANCHO, con un pequeño debounce, y en vez de reconstruir todo
+// sólo reescalamos la llave ya pintada.
+let anchoVentanaPrevio = window.innerWidth;
+let resizeLlaveTimeout = null;
+window.addEventListener('resize', () => {
+  if(window.innerWidth === anchoVentanaPrevio) return;
+  anchoVentanaPrevio = window.innerWidth;
+  clearTimeout(resizeLlaveTimeout);
+  resizeLlaveTimeout = setTimeout(() => {
+    if(vistaLlave === 'llave' && roundsLlaveActual){
+      fitBracketToScreen();
+      drawConnectors(roundsLlaveActual);
+    }
+  }, 150);
+});
+
+function setupNavToggle(){
+  const toggle = document.getElementById('nav-toggle');
+  const links = document.getElementById('navlinks');
+  if(!toggle || !links) return;
+  toggle.onclick = ()=>{
+    const open = links.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+  links.querySelectorAll('a').forEach(a=>{
+    a.addEventListener('click', ()=>{
+      links.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    });
+  });
+}
+setupNavToggle();
+
+function setupScrollSpy(){
+  const navLinksEls = Array.from(document.querySelectorAll('.navlinks a'));
+  const items = navLinksEls
+    .map(a => {
+      const href = a.getAttribute('href') || '';
+      if(href === '#') return { a, el: null, isHome: true };
+      if(!href.startsWith('#')) return null;
+      const el = document.querySelector(href);
+      return el ? { a, el, isHome: false } : null;
+    })
+    .filter(Boolean);
+
+  function updateActive(){
+    const scrollPos = window.scrollY + 140;
+    let current = items.find(it => it.isHome) || null;
+    items.forEach(it => {
+      if(it.el && it.el.offsetTop <= scrollPos) current = it;
+    });
+    items.forEach(it => it.a.classList.toggle('active', it === current));
+  }
+
+  window.addEventListener('scroll', updateActive, { passive: true });
+  window.addEventListener('resize', updateActive);
+  updateActive();
+}
+setupScrollSpy();
+
+(async function init(){
+  try{
+    state = await loadState(supabase);
+    lastStateJson = JSON.stringify(state);
+    await cargarSesionYPerfil();
+    supabase.auth.onAuthStateChange((_event, nuevaSesion)=>{
+      session = nuevaSesion;
+      if(!session){ miPerfil = null; esAdminActual = false; }
+      renderNavAuth();
+      renderInscripcionSection();
+      const selT = document.getElementById('select-torneo');
+      if(selT && selT.value){ actualizarTabsVista(selT.value); renderVistaLlave(); }
+    });
+    renderTorneosGrid();
+    populateSelectors();
+    renderInscripcionSection();
+    renderVistaLlave();
+    poblarFiltroCategoriaProximos();
+    renderProximosPartidos();
+    setInterval(pollUpdatesPublicas, 4000);
+  }catch(e){
+    console.error(e);
+    const msg = `<div class="empty-note">No se pudo cargar la información. Probá recargar la página. (${escapeHtml(e.message || e)})</div>`;
+    const grid = document.getElementById('torneos-grid');
+    const llave = document.getElementById('llave-content');
+    const partidos = document.getElementById('partidos-grid');
+    if(grid) grid.innerHTML = msg;
+    if(llave) llave.innerHTML = msg;
+    if(partidos) partidos.innerHTML = msg;
+  }
+})();
+
+// Refresca periódicamente los datos desde Supabase para que la llave y los
+// próximos partidos se actualicen solos en la web pública (sin recargar la
+// página) cuando el admin carga un resultado. No tocamos el formulario de
+// inscripción ni los selectores para no interrumpir a alguien que lo esté
+// completando en ese momento.
+async function pollUpdatesPublicas(){
+  try{
+    const nuevoState = await loadState(supabase);
+    const nuevoStateJson = JSON.stringify(nuevoState);
+    if(nuevoStateJson !== lastStateJson){
+      state = nuevoState;
+      lastStateJson = nuevoStateJson;
+      renderTorneosGrid();
+      poblarCategoriaPillsLlave(document.getElementById('select-torneo').value);
+      actualizarTabsVista(document.getElementById('select-torneo').value);
+      renderVistaLlave();
+      poblarFiltroCategoriaProximos();
+      renderProximosPartidos();
+    }
+  }catch(e){
+    console.error('Error en polling:', e);
+  }
+}
+</script>
+
+</body>
+</html>

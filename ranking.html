@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ranking — Training y Pádel Miramar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg: #080b12;
+--card: #0e121c;
+--card-2: #151a26;
+--line: #1e2433;
+--blue: #3b82f6;
+--blue-glow: rgba(59, 130, 246, 0.4);
+--blue-dim: rgba(59, 130, 246, 0.15);
+--lime: #d2f23a;
+--lime-glow: rgba(210, 242, 58, 0.4);
+--lime-dim: rgba(210, 242, 58, 0.12);
+--white: #f5f5f5;
+--grey: #8a93a6;
+--font-display: 'Montserrat', sans-serif;
+--font-body: 'Inter', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+background: var(--bg) url('hero-banner-padel-bg-blue.png') center/cover no-repeat fixed;
+color: var(--white); font-family: var(--font-body); line-height: 1.5;
+}
+a { color: inherit; text-decoration: none; }
+button, select, input { font-family: var(--font-body); }
+
+select, input {
+background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; color: var(--white);
+padding: 12px 14px; font-size: 0.9rem; outline: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+select:focus, input:focus {
+border-color: var(--blue);
+box-shadow: 0 0 12px var(--blue-glow);
+}
+
+/* Navbar */
+nav {
+display: flex; align-items: center; justify-content: space-between; padding: 14px 5vw;
+background: rgba(8, 11, 18, 0.85); backdrop-filter: blur(12px); border-bottom: 2px solid var(--blue);
+position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 14px;
+box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+}
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.brand-icon {
+width: 68px; height: 68px; margin: -9px 0; display: flex; align-items: center; justify-content: center;
+flex-shrink: 0; position: relative; z-index: 2;
+}
+@media(min-width:640px) { .brand-icon { width: 118px; height: 118px; margin: -19px 0; } }
+.brand-name { font-family: var(--font-display); font-weight: 700; font-size: 0.68rem; line-height: 1.3; color: var(--blue); letter-spacing: 0.02em; white-space: nowrap; }
+.brand-name span { display: block; color: var(--white); font-size: 1rem; font-weight: 900; letter-spacing: 0.005em; }
+@media(min-width:640px) { .brand-name { font-size: 0.8rem; letter-spacing: 0.03em; } .brand-name span { font-size: 1.22rem; } }
+
+.nav-toggle {
+display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; flex-shrink: 0;
+border-radius: 10px; border: 1px solid var(--line); background: var(--card-2); color: var(--white); cursor: pointer;
+}
+.nav-toggle:hover { border-color: var(--blue); color: var(--blue); }
+@media(min-width:920px) { .nav-toggle { display: none; } }
+
+.navlinks {
+display: none; flex-direction: column; width: 100%; gap: 2px; font-weight: 700; font-size: 0.85rem;
+color: var(--white); letter-spacing: 0.05em; position: absolute; top: 100%; left: 0; right: 0;
+background: rgba(8, 11, 18, 0.98); backdrop-filter: blur(12px); border-bottom: 2px solid var(--blue);
+padding: 6px 5vw 16px; box-shadow: 0 14px 30px rgba(0,0,0,0.5);
+}
+.navlinks.open { display: flex; }
+.navlinks a { position: relative; padding: 14px 2px; border-bottom: 1px solid var(--line); transition: color 0.2s ease; }
+.navlinks a:last-child { border-bottom: none; }
+.navlinks a.active, .navlinks a:hover { color: var(--blue); }
+.navlinks a.active::after {
+content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px;
+background: var(--blue); border-radius: 2px; box-shadow: 0 0 8px var(--blue-glow);
+}
+@media(min-width:920px) {
+nav { padding: 16px 5vw; }
+.navlinks {
+display: flex; flex-direction: row; position: static; width: auto; gap: 30px; padding: 0;
+background: none; border: none; box-shadow: none; backdrop-filter: none;
+}
+.navlinks a { padding: 0 0 9px; border-bottom: none; }
+}
+
+section{padding:40px 5vw;max-width:1300px;margin:0 auto;}
+@media(min-width:640px){ section{padding:50px 5vw;} }
+@media(min-width:920px){ section{padding:65px 5vw;} }
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px;border-bottom:1px solid rgba(30, 36, 51, 0.6);padding-bottom:16px;}
+.sec-title{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-weight:900;font-size:1.15rem;letter-spacing:0.03em;text-transform:uppercase;}
+@media(min-width:640px){ .sec-title{font-size:1.4rem;} }
+.sec-title::before{content:'';width:4px;height:24px;background:linear-gradient(180deg, var(--lime), var(--blue));border-radius:2px;display:inline-block;}
+.sec-icon{width:22px;height:22px;color:var(--lime);flex-shrink:0;}
+.sec-note{color:var(--grey);font-size:0.88rem;max-width:38ch;}
+
+.select-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;}
+.select-row select{width:100%;}
+@media(min-width:480px){ .select-row select{width:auto;min-width:200px;} }
+
+.table-scroll{width:100%;border-radius:16px;border:1px solid var(--line);}
+.ranking-table{width:100%;table-layout:fixed;border-collapse:collapse;background:var(--card);}
+.ranking-table th{text-align:left;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.03em;color:var(--grey);padding:10px 6px;border-bottom:1px solid var(--line);}
+.ranking-table td{padding:10px 6px;border-bottom:1px solid var(--line);font-size:0.78rem;overflow:hidden;}
+.ranking-table col.col-puesto{width:14%;}
+.ranking-table col.col-jugador{width:42%;}
+.ranking-table col.col-ganados{width:22%;}
+.ranking-table col.col-puntos{width:22%;}
+.th-full{display:none;}
+.th-short{display:inline;}
+@media(min-width:640px){
+.ranking-table th{font-size:0.7rem;padding:14px 18px;letter-spacing:0.06em;}
+.ranking-table td{padding:14px 18px;font-size:0.92rem;}
+.th-full{display:inline;}
+.th-short{display:none;}
+}
+.ranking-table tr:last-child td{border-bottom:none;}
+.ranking-row{transition:background 0.15s;}
+.ranking-row:hover td{background:var(--card-2);}
+.puesto{font-family:var(--font-display);font-weight:800;color:var(--grey);}
+.puesto.top{color:var(--lime);}
+.jugador-nombre{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.jugador-cell{display:flex;align-items:center;gap:8px;min-width:0;}
+.partidos-ganados{text-align:center;color:var(--grey);}
+.puntos{font-family:var(--font-display);font-weight:800;color:var(--lime);text-align:right;}
+
+.avatar-circle{
+width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;
+background:#141a26;display:flex;align-items:center;justify-content:center;
+font-family:var(--font-display);font-weight:800;color:var(--lime);border:2px solid var(--line);font-size:0.75rem;
+}
+@media(min-width:640px){ .avatar-circle{width:38px;height:38px;font-size:1rem;} }
+.avatar-circle img{width:100%;height:100%;object-fit:cover;}
+.avatar-circle.big{width:96px;height:96px;font-size:2.1rem;}
+
+.empty-note{color:var(--grey);font-size:0.9rem;padding:30px;background:var(--card);border:1px dashed var(--line);border-radius:14px;text-align:center;}
+
+footer {
+padding: 26px 5vw; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 14px;
+border-top: 1px solid var(--line); color: var(--grey); font-size: 0.8rem; background: rgba(8, 11, 18, 0.95);
+text-align: center;
+}
+@media(min-width:640px) { footer { padding: 35px 5vw; justify-content: space-between; font-size: 0.85rem; text-align: left; } }
+.footer-brand { display: flex; align-items: center; gap: 16px; }
+.footer-admin{opacity:0.6;transition:opacity 0.2s;font-weight:600;}
+.footer-admin:hover{opacity:1;color:var(--blue);}
+</style>
+</head>
+<body>
+
+<nav>
+<div class="brand">
+<div class="brand-icon">
+<img src="logo.png" alt="Training y Pádel Miramar" style="width:100%;height:100%;object-fit:contain;">
+</div>
+<div class="brand-name">TRAINING Y<span>PÁDEL MIRAMAR</span></div>
+</div>
+<button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+</button>
+<div class="navlinks" id="navlinks">
+<a href="index.html">INICIO</a>
+<a href="index.html#proximos">PRÓXIMOS PARTIDOS</a>
+<a href="index.html#llaves">LLAVE DEL TORNEO</a>
+<a href="ranking.html" class="active">RANKING</a>
+<a href="index.html#inscripcion">INSCRIPCIÓN</a>
+</div>
+</nav>
+
+<section id="ranking">
+<div class="sec-head">
+<div class="sec-title">
+<svg class="sec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 21h8M12 17v4M6 4h12v3a6 6 0 01-12 0V4z"/><path d="M6 5H3v2a4 4 0 004 4M18 5h3v2a4 4 0 01-4 4"/></svg>
+RANKING DE JUGADORES
+</div>
+<p class="sec-note">Puntos acumulados por partidos ganados en todo el circuito.</p>
+</div>
+<div class="select-row">
+<select id="rk-categoria"></select>
+<select id="rk-genero"></select>
+</div>
+<div id="ranking-content"></div>
+</section>
+
+<footer>
+<div>© 2026 Training y Pádel Miramar. Todos los derechos reservados.</div>
+<div class="footer-brand">
+<a class="footer-admin" href="admin.html">Panel de administración</a>
+</div>
+</footer>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, GENEROS,
+loadState, calcularRankingPorCategoria, getJugadorPartidosStats, getAllCategorias, getCategoriaLabel
+} from './shared.js?v=13';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let state = null;
+
+function escapeHtml(str){
+return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function avatarHtml(j, big){
+const inicial = (j.nombre || '?').trim().charAt(0).toUpperCase();
+const cls = big ? 'avatar-circle big' : 'avatar-circle';
+return `<div class="${cls}">${j.foto ? `<img src="${escapeHtml(j.foto)}" alt="${escapeHtml(j.nombre)}">` : inicial}</div>`;
+}
+
+// ---- RANKING DE JUGADORES ----
+function populateCategoriaSelect(){
+const sel = document.getElementById('rk-categoria');
+sel.innerHTML = getAllCategorias(state).map(c=>`<option value="${c}">${getCategoriaLabel(state,c)}</option>`).join('');
+// Por defecto se muestra la categoría 7ma (si existe entre las categorías disponibles)
+if(getAllCategorias(state).includes('7ma')){
+sel.value = '7ma';
+}
+sel.onchange = renderRanking;
+}
+
+function populateGeneroSelect(){
+const sel = document.getElementById('rk-genero');
+sel.innerHTML = Object.entries(GENEROS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+// Por defecto se muestra el ranking Femenino
+if(GENEROS['femenino']){
+sel.value = 'femenino';
+}
+sel.onchange = renderRanking;
+}
+
+function renderRanking(){
+const cat = document.getElementById('rk-categoria').value;
+const genero = document.getElementById('rk-genero').value;
+const content = document.getElementById('ranking-content');
+const jugadores = state.jugadores || [];
+const ranking = calcularRankingPorCategoria(jugadores, cat, genero).filter(j=>j.puntos>0);
+
+if(ranking.length===0){
+content.innerHTML = '<div class="empty-note">Todavía no hay puntos cargados en esta categoría.</div>';
+return;
+}
+
+content.innerHTML = `
+   <div class="table-scroll">
+   <table class="ranking-table">
+     <colgroup>
+       <col class="col-puesto"><col class="col-jugador"><col class="col-ganados"><col class="col-puntos">
+     </colgroup>
+     <thead>
+       <tr>
+         <th>Puesto</th>
+         <th>Jugador</th>
+         <th style="text-align:center;"><span class="th-full">Partidos ganados</span><span class="th-short">PG</span></th>
+         <th style="text-align:right;">Puntos</th>
+       </tr>
+     </thead>
+     <tbody>
+       ${ranking.map(j=>{
+         const stats = getJugadorPartidosStats(state, j.id);
+         return `
+         <tr class="ranking-row" data-jugador="${j.id}">
+           <td class="puesto ${j.puesto<=3?'top':''}">${j.puesto}</td>
+           <td>
+             <div class="jugador-cell">
+               ${avatarHtml(j, false)}
+               <div class="jugador-nombre">${escapeHtml(j.nombre)}</div>
+             </div>
+           </td>
+           <td class="partidos-ganados">${stats.ganados}</td>
+           <td class="puntos">${j.puntos}</td>
+         </tr>`;
+       }).join('')}
+     </tbody>
+   </table>
+   </div>
+ `;
+
+}
+
+function setupNavToggle(){
+const toggle = document.getElementById('nav-toggle');
+const links = document.getElementById('navlinks');
+if(!toggle || !links) return;
+toggle.onclick = ()=>{
+const open = links.classList.toggle('open');
+toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+};
+links.querySelectorAll('a').forEach(a=>{
+a.addEventListener('click', ()=>{
+links.classList.remove('open');
+toggle.setAttribute('aria-expanded', 'false');
+});
+});
+}
+setupNavToggle();
+
+// ---- Polling en tiempo real ----
+async function pollUpdates(){
+try{
+const newState = await loadState(supabase);
+if(JSON.stringify(state) !== JSON.stringify(newState)){
+state = newState;
+renderRanking();
+}
+}catch(e){
+console.error('Error en polling:', e);
+}
+}
+
+(async function init(){
+try{
+state = await loadState(supabase);
+populateCategoriaSelect();
+populateGeneroSelect();
+renderRanking();
+setInterval(pollUpdates, 3000);
+}catch(e){
+console.error(e);
+document.getElementById('ranking-content').innerHTML = '<div class="empty-note">No se pudo conectar con la base de datos.</div>';
+}
+})();
+</script>
+
+</body>
+</html>
