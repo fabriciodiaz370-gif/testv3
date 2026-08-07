@@ -290,8 +290,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
 SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, GENEROS,
 loadState, calcularRankingPorCategoria, getJugadorPartidosStats, getAllCategorias, getCategoriaLabel,
-actualizarSelectorCustom, activarReveal, setupPwaInstall
-} from './shared.js?v=17';
+actualizarSelectorCustom, activarReveal, setupPwaInstall, suscribirseATorneo
+} from './shared.js?v=18';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let state = null;
@@ -396,17 +396,10 @@ toggle.setAttribute('aria-expanded', 'false');
 setupNavToggle();
 setupPwaInstall();
 
-// ---- Polling en tiempo real ----
-async function pollUpdates(){
-try{
-const newState = await loadState(supabase);
-if(JSON.stringify(state) !== JSON.stringify(newState)){
-state = newState;
+// ---- Sincronización en vivo (Supabase Realtime, con respaldo por polling — ver shared.js) ----
+function aplicarNuevoStateRanking(nuevoState){
+state = nuevoState;
 renderRanking();
-}
-}catch(e){
-console.error('Error en polling:', e);
-}
 }
 
 (async function init(){
@@ -416,7 +409,7 @@ populateCategoriaSelect();
 populateGeneroSelect();
 renderRanking();
 activarReveal();
-setInterval(pollUpdates, 3000);
+suscribirseATorneo(supabase, aplicarNuevoStateRanking, { estadoInicial: state });
 }catch(e){
 console.error(e);
 document.getElementById('ranking-content').innerHTML = '<div class="empty-note">No se pudo conectar con la base de datos.</div>';

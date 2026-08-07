@@ -203,8 +203,8 @@ import {
   uid, generateBracket, propagateWinner, roundLabel, loadState, saveState, isAprobada,
   resolverJugadorId, registrarResultadoPartido, getPuntosConfig, DEFAULT_PUNTOS_CONFIG, POSICION_LABELS,
   isCategoriaSuma, getAllCategorias, getCategoriaLabel, getCategoriasSumaConfig,
-  RONDA_LABELS, RONDA_OPCIONES, getRondaLabel, getCupoInfo
-} from './shared.js?v=14';
+  RONDA_LABELS, RONDA_OPCIONES, getRondaLabel, getCupoInfo, suscribirseATorneo
+} from './shared.js?v=18';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById('app');
@@ -218,6 +218,7 @@ let partidosTorneoId = null;
 let jugadoresSearchQuery = '';
 let lastStateJson = '';
 let isSaving = false;
+let suscripcionTorneo = null; // ver initApp() — objeto que devuelve suscribirseATorneo (shared.js)
 
 function toast(msg){
   toastEl.textContent = msg;
@@ -230,6 +231,11 @@ async function persist(){
   try{
     await saveState(supabase, state);
     lastStateJson = JSON.stringify(state);
+    // Le avisamos a la suscripción que este guardado es "propio": Supabase
+    // también nos manda a nosotros el aviso en tiempo real de nuestro propio
+    // cambio (el "eco"), y sin esto se dispararía un re-render de más apenas
+    // llegue, aunque ya lo tengamos en pantalla.
+    if(suscripcionTorneo) suscripcionTorneo.marcarComoPropio(state);
     toast('Guardado ✓');
   }catch(e){
     console.error(e);
@@ -1139,19 +1145,15 @@ function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-async function pollUpdatesAdmin(){
+// Se llama cuando llega un cambio real (por Supabase Realtime, o por el
+// chequeo de respaldo — ver suscribirseATorneo en shared.js). Si justo
+// estamos a mitad de un guardado propio (isSaving), lo ignoramos: cuando
+// termine ese guardado, persist() ya deja todo consistente por su cuenta.
+function aplicarNuevoStateAdmin(nuevoState){
   if(isSaving) return;
-  try{
-    const newState = await loadState(supabase);
-    const newStateJson = JSON.stringify(newState);
-    if(newStateJson !== lastStateJson){
-      state = newState;
-      lastStateJson = newStateJson;
-      render();
-    }
-  }catch(e){
-    console.error('Error en polling:', e);
-  }
+  state = nuevoState;
+  lastStateJson = JSON.stringify(nuevoState);
+  render();
 }
 
 // ---- INIT (datos del panel, se llama recién después de loguearse) ----
@@ -1162,7 +1164,7 @@ async function initApp(){
     lastStateJson = JSON.stringify(state);
     activeTorneoId = state.torneos[0]?.id || null;
     render();
-    setInterval(pollUpdatesAdmin, 2000);
+    suscripcionTorneo = suscribirseATorneo(supabase, aplicarNuevoStateAdmin, { estadoInicial: state });
   }catch(e){
     console.error(e);
     app.innerHTML = `<div class="panel"><div class="empty-state">Error conectando con la base de datos.</div></div>`;

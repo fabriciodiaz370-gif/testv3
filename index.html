@@ -962,8 +962,8 @@ import {
   crearCuentaJugador, iniciarSesionJugador, cerrarSesionJugador,
   obtenerMiPerfil, asegurarMiPerfil, buscarJugadoresRegistrados, resolverJugadorDesdePerfil,
   encontrarJugadorIdPorPerfil, calcularRankingPorCategoria, getJugadorPartidosStats, getCupoInfo,
-  actualizarSelectorCustom, activarReveal, setupPwaInstall
-} from './shared.js?v=17';
+  actualizarSelectorCustom, activarReveal, setupPwaInstall, suscribirseATorneo
+} from './shared.js?v=18';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let state = null;
@@ -2159,7 +2159,7 @@ programarRecordatorioInstalarApp();
     renderProximosPartidos();
     chequearNotificacionTorneo();
     activarReveal();
-    setInterval(pollUpdatesPublicas, 4000);
+    suscribirseATorneo(supabase, aplicarNuevoStatePublico, { estadoInicial: state });
     setInterval(chequearNotificacionTorneo, 20000);
   }catch(e){
     console.error(e);
@@ -2173,29 +2173,22 @@ programarRecordatorioInstalarApp();
   }
 })();
 
-// Refresca periódicamente los datos desde Supabase para que la llave y los
-// próximos partidos se actualicen solos en la web pública (sin recargar la
-// página) cuando el admin carga un resultado. No tocamos el formulario de
-// inscripción ni los selectores para no interrumpir a alguien que lo esté
-// completando en ese momento.
-async function pollUpdatesPublicas(){
-  try{
-    const nuevoState = await loadState(supabase);
-    const nuevoStateJson = JSON.stringify(nuevoState);
-    if(nuevoStateJson !== lastStateJson){
-      state = nuevoState;
-      lastStateJson = nuevoStateJson;
-      renderTorneosGrid();
-      poblarCategoriaPillsLlave(document.getElementById('select-torneo').value);
-      actualizarTabsVista(document.getElementById('select-torneo').value);
-      renderVistaLlave();
-      poblarFiltroCategoriaProximos();
-      renderProximosPartidos();
-      chequearNotificacionTorneo();
-    }
-  }catch(e){
-    console.error('Error en polling:', e);
-  }
+// Se llama cuando llega un cambio real (por Supabase Realtime, o por el
+// chequeo de respaldo) para que la llave y los próximos partidos se
+// actualicen solos en la web pública (sin recargar la página) cuando el
+// admin carga un resultado. No tocamos el formulario de inscripción ni los
+// selectores para no interrumpir a alguien que lo esté completando en ese
+// momento. Ver suscribirseATorneo en shared.js.
+function aplicarNuevoStatePublico(nuevoState){
+  state = nuevoState;
+  lastStateJson = JSON.stringify(nuevoState);
+  renderTorneosGrid();
+  poblarCategoriaPillsLlave(document.getElementById('select-torneo').value);
+  actualizarTabsVista(document.getElementById('select-torneo').value);
+  renderVistaLlave();
+  poblarFiltroCategoriaProximos();
+  renderProximosPartidos();
+  chequearNotificacionTorneo();
 }
 </script>
 
