@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Training y Pádel Miramar</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#080b12">
+<link rel="apple-touch-icon" href="logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pádel Miramar">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -694,6 +700,34 @@
   @media(min-width:640px) { footer { padding: 35px 5vw; justify-content: space-between; font-size: 0.85rem; text-align: left; } }
   .footer-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--white); font-family: var(--font-display); }
   .footer-brand svg { color: var(--lime); }
+
+  /* Instalar app (PWA) */
+  .btn-install-app{
+    display:flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:800;font-size:0.72rem;
+    letter-spacing:0.04em;padding:9px 14px;border-radius:9px;border:1px solid var(--lime);background:var(--lime-dim);
+    color:var(--lime);cursor:pointer;text-transform:uppercase;white-space:nowrap;transition:all .2s ease;flex-shrink:0;
+  }
+  .btn-install-app:hover{background:var(--lime);color:#07090e;}
+  .btn-install-app svg{flex-shrink:0;}
+  @media(max-width:420px){ .btn-install-app span{display:none;} .btn-install-app{padding:9px;} }
+
+  .pwa-modal-overlay{
+    position:fixed;inset:0;background:rgba(5,7,12,0.78);backdrop-filter:blur(4px);z-index:1000;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .pwa-modal-overlay.open{display:flex;}
+  .pwa-modal-box{
+    background:linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);border:1px solid var(--line);
+    border-radius:18px;padding:26px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.6);position:relative;
+  }
+  .pwa-modal-close{
+    position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
+    background:var(--card-2);color:var(--grey);font-size:1.1rem;line-height:1;cursor:pointer;
+  }
+  .pwa-modal-close:hover{color:var(--white);border-color:var(--blue);}
+  .pwa-modal-title{font-family:var(--font-display);font-weight:900;font-size:1.05rem;margin-bottom:14px;padding-right:26px;}
+  .pwa-modal-body{font-size:0.88rem;color:var(--grey);line-height:1.7;}
+  .pwa-modal-body b{color:var(--white);}
 </style>
 </head>
 <body>
@@ -709,6 +743,10 @@
     <span class="nav-toggle-bar"></span>
     <span class="nav-toggle-bar"></span>
     <span class="nav-toggle-bar"></span>
+  </button>
+  <button type="button" class="btn-install-app" id="btn-instalar-app" style="display:none;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg>
+    <span>Instalar app</span>
   </button>
   <div class="navlinks" id="navlinks">
     <a href="#" class="active">INICIO</a>
@@ -893,6 +931,19 @@
 <!-- Notificaciones (ej: "se abrió la inscripción de tu categoría") -->
 <div class="toast-container" id="toast-container"></div>
 
+<!-- Instrucciones de instalación para iPhone (Safari no permite disparar el instalador por código) -->
+<div class="pwa-modal-overlay" id="pwa-ios-modal">
+  <div class="pwa-modal-box">
+    <button class="pwa-modal-close" id="pwa-ios-close" type="button">&times;</button>
+    <div class="pwa-modal-title">Instalar la app</div>
+    <div class="pwa-modal-body">
+      1. Tocá el botón <b>Compartir</b> (el cuadradito con la flecha hacia arriba) en la barra de Safari.<br>
+      2. Elegí <b>"Agregar a pantalla de inicio"</b>.<br>
+      3. Confirmá tocando <b>"Agregar"</b>.
+    </div>
+  </div>
+</div>
+
 <footer id="contacto">
   <div>© 2026 Training y Pádel Miramar. Todos los derechos reservados.</div>
   <div class="footer-brand">
@@ -911,8 +962,8 @@ import {
   crearCuentaJugador, iniciarSesionJugador, cerrarSesionJugador,
   obtenerMiPerfil, asegurarMiPerfil, buscarJugadoresRegistrados, resolverJugadorDesdePerfil,
   encontrarJugadorIdPorPerfil, calcularRankingPorCategoria, getJugadorPartidosStats, getCupoInfo,
-  actualizarSelectorCustom, activarReveal
-} from './shared.js?v=16';
+  actualizarSelectorCustom, activarReveal, setupPwaInstall
+} from './shared.js?v=17';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let state = null;
@@ -1962,6 +2013,7 @@ function setupScrollSpy(){
   updateActive();
 }
 setupScrollSpy();
+setupPwaInstall();
 
 (async function init(){
   try{
