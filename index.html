@@ -1068,8 +1068,31 @@ function seleccionarTorneoEnFormulario(torneoId){
   if(inscT && inscT.querySelector(`option[value="${torneoId}"]`)){
     inscT.value = torneoId;
     inscT.dispatchEvent(new Event('change'));
+    // El <select> real ya quedó con el valor correcto (por eso categoría se
+    // actualiza sola), pero el menú desplegable "lindo" que lo tapa visualmente
+    // (ver actualizarSelectorCustom en shared.js) no se entera solo de este
+    // cambio hecho por código — sólo se refresca cuando el toque sale de ahí
+    // mismo. Lo forzamos para que muestre el nombre del torneo elegido.
+    actualizarSelectorCustom(inscT);
   }
-  document.getElementById('inscripcion').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  scrollASeccion('inscripcion');
+}
+
+// Baja hasta una sección restando la altura real del nav (que es "sticky" y
+// se queda pegado arriba tapando lo primero que haya debajo). Sin este
+// ajuste, scrollIntoView alinea el borde de la sección justo con el borde
+// superior de la pantalla, pero el nav la tapa por encima — entonces lo
+// primero que se termina viendo es contenido más abajo (por ejemplo, se
+// pierde el título "Inscripción de pareja" y sólo queda a la vista la
+// tarjeta con tu nombre). Restamos la altura del nav (+ un margen) para que
+// arranque a verse un poco más arriba.
+function scrollASeccion(id, margen = 16){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const nav = document.querySelector('nav');
+  const navH = nav ? nav.offsetHeight : 0;
+  const y = el.getBoundingClientRect().top + window.scrollY - navH - margen;
+  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
 }
 
 // Si habían tocado la tarjeta de un torneo sin estar logueados (ver
@@ -1246,6 +1269,11 @@ const RECARGA_MANUAL = (() => {
 const STORAGE_KEY_TORNEO = 'padelmiramar:torneoSeleccionado';
 const STORAGE_KEY_CATEGORIA = 'padelmiramar:categoriaLlave';
 const STORAGE_KEY_NOTIFICADOS = 'padelmiramar:torneosNotificados';
+// Este, a diferencia de los de arriba, se guarda en localStorage (no
+// sessionStorage): tiene que sobrevivir aunque cierren la pestaña/el
+// navegador, porque el recordatorio de instalar la app es "una sola vez en
+// la vida del visitante" y no "una sola vez por pestaña abierta".
+const STORAGE_KEY_INSTALL_REMINDER = 'padelmiramar:recordatorioInstalarMostrado';
 function guardarSeleccion(key, value){
   try{ sessionStorage.setItem(key, value); }catch(err){ /* modo privado u otro bloqueo: seguimos sin persistir */ }
 }
@@ -1335,6 +1363,54 @@ function crearToast({ icono, titulo, subtitulo, duracion = 9000, accionHtml = ''
 const ICONO_ESTRELLA = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 2l2.4 5.6L20 8.3l-4.2 3.9 1.1 5.8L12 15l-4.9 3 1.1-5.8L4 8.3l5.6-.7z"/></svg>`;
 const ICONO_CHECK = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M20 6L9 17l-5-5"/></svg>`;
 const ICONO_INFO = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>`;
+// Mismo ícono que el botón "Instalar app" del nav, para que se reconozca de un vistazo.
+const ICONO_INSTALAR = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg>`;
+
+// ============================================================
+// Recordatorio para instalar la app (celular)
+// ============================================================
+// A el minuto de estar en la página (en celular, no en desktop), si el botón
+// "Instalar app" del nav ya está disponible para usarse (ver setupPwaInstall
+// en shared.js — se activa solo en Android/Chrome/iOS, y no si ya la tiene
+// instalada), le mostramos un aviso invitándolo a instalarla. Se muestra una
+// única vez por visitante (queda guardado en localStorage): la haya
+// instalado, la haya ignorado o haya cerrado el aviso, no vuelve a aparecer
+// en visitas futuras.
+const TIEMPO_RECORDATORIO_INSTALAR_MS = 60 * 1000;
+
+function esMobile(){
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+function yaSeMostroRecordatorioInstalar(){
+  try{ return localStorage.getItem(STORAGE_KEY_INSTALL_REMINDER) === '1'; }
+  catch(err){ return false; } // modo privado u otro bloqueo: preferimos no insistir de más
+}
+function marcarRecordatorioInstalarMostrado(){
+  try{ localStorage.setItem(STORAGE_KEY_INSTALL_REMINDER, '1'); }catch(err){ /* no persiste, no pasa nada */ }
+}
+
+function programarRecordatorioInstalarApp(){
+  if(!esMobile() || yaSeMostroRecordatorioInstalar()) return;
+
+  setTimeout(()=>{
+    if(yaSeMostroRecordatorioInstalar()) return; // por si se instaló o se cerró el aviso desde otra pestaña
+    const btnInstalar = document.getElementById('btn-instalar-app');
+    // Si el botón sigue oculto es porque el navegador todavía no habilitó la
+    // instalación (o ya está instalada) — en ese caso no mostramos nada.
+    if(!btnInstalar || btnInstalar.style.display === 'none') return;
+
+    marcarRecordatorioInstalarMostrado();
+    crearToast({
+      icono: ICONO_INSTALAR,
+      titulo: '¿Querés tener la app en tu celular?',
+      subtitulo: 'Instalala gratis: accedés más rápido, directo desde tu pantalla de inicio.',
+      duracion: 12000,
+      accionHtml: `<button type="button" class="toast-btn">Instalar ahora</button>`,
+      onAccion: ()=> btnInstalar.click()
+    });
+  }, TIEMPO_RECORDATORIO_INSTALAR_MS);
+}
 
 function mostrarNotificacionTorneo(t){
   ultimaNotificacionPorTorneo[t.id] = Date.now();
@@ -2071,6 +2147,7 @@ function setupScrollSpy(){
 }
 setupScrollSpy();
 setupPwaInstall();
+programarRecordatorioInstalarApp();
 
 (async function init(){
   try{
