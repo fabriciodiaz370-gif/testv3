@@ -722,3 +722,81 @@ export async function saveState(supabase, state){
   });
   if(error) throw error;
 }
+
+// ============================================================
+// Instalar app (PWA)
+// ============================================================
+// Botón "Instalar app" en la navbar. En Android/Chrome/Edge escuchamos el
+// evento "beforeinstallprompt" que dispara el navegador cuando detecta que
+// el sitio cumple los requisitos (manifest.json + service worker + HTTPS):
+// lo guardamos y recién mostramos el botón ahí, para no mostrar un botón
+// que todavía no puede hacer nada. Al tocarlo, disparamos el diálogo nativo
+// de instalación con ese evento guardado.
+//
+// En iPhone (Safari) ese evento no existe — Apple no lo expone — así que ahí
+// no hay forma de disparar la instalación por código. Lo único que se puede
+// hacer es mostrarle a la persona las instrucciones manuales ("Compartir" →
+// "Agregar a pantalla de inicio"), por eso en iOS mostramos el botón directo
+// y, al tocarlo, abrimos un modal con esos pasos en vez de un prompt nativo.
+//
+// Si la página ya se está ejecutando como app instalada (display-mode:
+// standalone, o navigator.standalone en iOS), ocultamos el botón directamente.
+let _pwaDeferredPrompt = null;
+
+function _pwaEsStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function _pwaEsIOS(){
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent) && !window.MSStream;
+}
+
+export function setupPwaInstall(){
+  const btn = document.getElementById('btn-instalar-app');
+  if(!btn) return;
+
+  if(_pwaEsStandalone()){
+    btn.style.display = 'none';
+    return;
+  }
+
+  // El service worker es requisito técnico para que el navegador considere
+  // el sitio instalable — no cachea nada por ahora, solo habilita la PWA.
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
+
+  if(_pwaEsIOS()){
+    btn.style.display = 'flex';
+    btn.onclick = ()=>{
+      const modal = document.getElementById('pwa-ios-modal');
+      if(modal) modal.classList.add('open');
+    };
+    const modal = document.getElementById('pwa-ios-modal');
+    const closeBtn = document.getElementById('pwa-ios-close');
+    if(closeBtn) closeBtn.onclick = ()=> modal.classList.remove('open');
+    if(modal){
+      modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); });
+    }
+    return;
+  }
+
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    _pwaDeferredPrompt = e;
+    btn.style.display = 'flex';
+  });
+
+  btn.onclick = async ()=>{
+    if(!_pwaDeferredPrompt) return;
+    _pwaDeferredPrompt.prompt();
+    await _pwaDeferredPrompt.userChoice;
+    _pwaDeferredPrompt = null;
+    btn.style.display = 'none';
+  };
+
+  window.addEventListener('appinstalled', ()=>{
+    btn.style.display = 'none';
+    _pwaDeferredPrompt = null;
+  });
+}
