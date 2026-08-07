@@ -971,6 +971,9 @@ let lastStateJson = null;
 let session = null;
 let miPerfil = null;
 let companeroElegido = null;
+// Si tocan la tarjeta de un torneo sin estar logueados, guardamos acá el id
+// para preseleccionarlo automáticamente apenas terminen de loguearse/crear cuenta.
+let torneoPendienteLogin = null;
 
 function chipHtml(categoria){
   const rgb = getCategoriaColorRGB(categoria);
@@ -997,8 +1000,9 @@ function renderTorneosGrid(){
   const grid = document.getElementById('torneos-grid');
   if(!state?.torneos?.length){ grid.innerHTML = '<div class="empty-note">Todavía no hay torneos cargados.</div>'; return; }
   grid.innerHTML = state.torneos.map((t, i)=>{
+    const disponible = t.inscripcionAbierta && !getCupoInfo(t)?.lleno;
     return `
-      <div class="torneo-card reveal" style="transition-delay:${Math.min(i, 8) * 90}ms;">
+      <div class="torneo-card reveal" style="transition-delay:${Math.min(i, 8) * 90}ms; cursor:pointer;" data-torneo-id="${t.id}" tabindex="0" role="button" aria-label="Inscribirme en ${escapeHtml(t.nombre)}">
         <div>
           <span class="badge ${t.inscripcionAbierta ? 'badge-abierto' : 'badge-cerrado'}">${t.inscripcionAbierta ? 'Inscripción Abierta' : 'Inscripción Cerrada'}</span>
           ${t.genero ? `<span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);">${TORNEO_GENEROS[t.genero]}</span>` : ''}
@@ -1016,10 +1020,67 @@ function renderTorneosGrid(){
         </div>
         <div class="chips">${t.categorias.map(c=>chipHtml(c)).join('')}</div>
         ${cupoHtml(t)}
+        ${disponible ? `<div style="color:var(--blue);font-weight:800;font-size:0.76rem;font-family:var(--font-display);text-transform:uppercase;letter-spacing:0.04em;">Tocá para inscribirte →</div>` : ''}
       </div>
     `;
   }).join('');
+  grid.querySelectorAll('.torneo-card').forEach(card=>{
+    const ir = ()=> irAInscripcionConTorneo(card.dataset.torneoId);
+    card.addEventListener('click', ir);
+    card.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); ir(); }
+    });
+  });
   activarReveal(grid);
+}
+
+// Se llama al tocar una tarjeta de torneo en "Torneos y categorías". Si el
+// torneo tiene inscripción abierta (y no está lleno), lleva directo al
+// formulario con ese torneo ya elegido — logueado, lo hace al toque; si
+// todavía no tiene cuenta/sesión, primero abre el login/registro y, apenas
+// entra, retoma y hace la preselección (ver torneoPendienteLogin más abajo).
+function irAInscripcionConTorneo(torneoId){
+  const t = state.torneos.find(x=>x.id===torneoId);
+  if(!t) return;
+  const disponible = t.inscripcionAbierta && !getCupoInfo(t)?.lleno;
+  if(!disponible){
+    crearToast({
+      icono: ICONO_INFO,
+      titulo: 'Inscripción no disponible',
+      subtitulo: `"${escapeHtml(t.nombre)}" no tiene inscripción abierta en este momento.`
+    });
+    return;
+  }
+  if(session && miPerfil){
+    seleccionarTorneoEnFormulario(torneoId);
+  } else {
+    torneoPendienteLogin = torneoId;
+    openAuthModal();
+  }
+}
+
+// Elige el torneo indicado en el <select> del formulario de inscripción
+// (disparando su "change" para que se actualicen categorías, etc.) y baja
+// hasta la sección. Se usa tanto al tocar una tarjeta de torneo como, ya
+// existía antes, desde el botón "Inscribirme ahora" del toast de notificación.
+function seleccionarTorneoEnFormulario(torneoId){
+  const inscT = document.getElementById('insc-torneo');
+  if(inscT && inscT.querySelector(`option[value="${torneoId}"]`)){
+    inscT.value = torneoId;
+    inscT.dispatchEvent(new Event('change'));
+  }
+  document.getElementById('inscripcion').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Si habían tocado la tarjeta de un torneo sin estar logueados (ver
+// irAInscripcionConTorneo), retoma esa selección apenas termina de loguearse
+// o crear la cuenta. Se llama después de renderInscripcionSection(), que ya
+// dejó armado el <select> de torneos con la sesión nueva.
+function retomarTorneoPendienteTrasLogin(){
+  if(!torneoPendienteLogin) return;
+  const pendienteId = torneoPendienteLogin;
+  torneoPendienteLogin = null;
+  seleccionarTorneoEnFormulario(pendienteId);
 }
 
 // Revelado al scrollear: ver activarReveal() en shared.js.
@@ -1273,6 +1334,7 @@ function crearToast({ icono, titulo, subtitulo, duracion = 9000, accionHtml = ''
 
 const ICONO_ESTRELLA = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 2l2.4 5.6L20 8.3l-4.2 3.9 1.1 5.8L12 15l-4.9 3 1.1-5.8L4 8.3l5.6-.7z"/></svg>`;
 const ICONO_CHECK = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M20 6L9 17l-5-5"/></svg>`;
+const ICONO_INFO = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>`;
 
 function mostrarNotificacionTorneo(t){
   ultimaNotificacionPorTorneo[t.id] = Date.now();
@@ -1288,14 +1350,7 @@ function mostrarNotificacionTorneo(t){
     titulo: '¡Se abrió la inscripción de tu categoría!',
     subtitulo: `${escapeHtml(t.nombre)} · ${getCategoriaLabel(state, miPerfil.categoria)} · ${cupoTexto}`,
     accionHtml: `<button type="button" class="toast-btn">Inscribirme ahora</button>`,
-    onAccion: ()=>{
-      const inscT = document.getElementById('insc-torneo');
-      if(inscT.querySelector(`option[value="${t.id}"]`)){
-        inscT.value = t.id;
-        inscT.dispatchEvent(new Event('change'));
-      }
-      document.getElementById('inscripcion').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    onAccion: ()=> seleccionarTorneoEnFormulario(t.id)
   });
 }
 
@@ -1780,6 +1835,7 @@ loginFormModal.addEventListener('submit', async (e)=>{
     closeAuthModal();
     renderInscripcionSection();
     chequearNotificacionTorneo();
+    retomarTorneoPendienteTrasLogin();
   }catch(err){
     errorEl.textContent = 'Email o contraseña incorrectos.';
   }
@@ -1806,6 +1862,7 @@ signupFormModal.addEventListener('submit', async (e)=>{
       closeAuthModal();
       renderInscripcionSection();
       chequearNotificacionTorneo();
+      retomarTorneoPendienteTrasLogin();
     } else {
       noteEl.style.display = 'block';
       noteEl.textContent = 'Te mandamos un mail para confirmar tu cuenta. Una vez confirmada, iniciá sesión.';
