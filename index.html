@@ -59,20 +59,43 @@
   @media(min-width:640px) { .brand-name { font-size: 0.8rem; letter-spacing: 0.03em; } .brand-name span { font-size: 1.22rem; } }
 
   .nav-toggle {
-    display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+    width: 42px; height: 42px; flex-shrink: 0;
     border-radius: 10px; border: 1px solid var(--line); background: var(--card-2); color: var(--white); cursor: pointer;
   }
   .nav-toggle:hover { border-color: var(--blue); color: var(--blue); }
+  .nav-toggle-bar {
+    display: block; width: 18px; height: 2px; border-radius: 2px; background: currentColor;
+    transition: transform 0.45s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.3s ease;
+  }
+  .nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
   @media(min-width:920px) { .nav-toggle { display: none; } }
 
   .navlinks {
-    display: none; flex-direction: column; width: 100%; gap: 2px; font-weight: 700; font-size: 0.85rem;
+    display: flex; flex-direction: column; width: 100%; gap: 2px; font-weight: 700; font-size: 0.85rem;
     color: var(--white); letter-spacing: 0.05em; position: absolute; top: 100%; left: 0; right: 0;
     background: rgba(8, 11, 18, 0.98); backdrop-filter: blur(12px); border-bottom: 2px solid var(--blue);
     padding: 6px 5vw 16px; box-shadow: 0 14px 30px rgba(0,0,0,0.5);
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transform: translateY(-14px) scaleY(0.96); transform-origin: top;
+    transition: opacity 0.45s ease, transform 0.5s cubic-bezier(0.34, 1.4, 0.64, 1), visibility 0s linear 0.45s;
   }
-  .navlinks.open { display: flex; }
-  .navlinks a { position: relative; padding: 14px 2px; border-bottom: 1px solid var(--line); transition: color 0.2s ease; }
+  .navlinks.open {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scaleY(1);
+    transition: opacity 0.45s ease, transform 0.5s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  .navlinks a {
+    position: relative; padding: 14px 2px; border-bottom: 1px solid var(--line); transition: color 0.2s ease, opacity 0.4s ease, transform 0.4s ease;
+    opacity: 0; transform: translateY(-6px);
+  }
+  .navlinks.open a { opacity: 1; transform: translateY(0); }
+  .navlinks a:nth-child(1) { transition-delay: 0.08s; }
+  .navlinks a:nth-child(2) { transition-delay: 0.14s; }
+  .navlinks a:nth-child(3) { transition-delay: 0.2s; }
+  .navlinks a:nth-child(4) { transition-delay: 0.26s; }
+  .navlinks a:nth-child(5) { transition-delay: 0.32s; }
   .navlinks a:last-child { border-bottom: none; }
   .navlinks a.active, .navlinks a:hover { color: var(--blue); }
   .navlinks a.active::after {
@@ -84,8 +107,9 @@
     .navlinks {
       display: flex; flex-direction: row; position: static; width: auto; gap: 30px; padding: 0;
       background: none; border: none; box-shadow: none; backdrop-filter: none;
+      opacity: 1; visibility: visible; pointer-events: auto; transform: none; transition: none;
     }
-    .navlinks a { padding: 0 0 9px; border-bottom: none; }
+    .navlinks a { padding: 0 0 9px; border-bottom: none; opacity: 1; transform: none; transition-delay: 0s; }
   }
 
   /* Hero: foto de fondo a pantalla completa. En mobile usamos un recorte
@@ -568,6 +592,100 @@
   .cupo-barra-fill.llena { background: #ef4444; }
   .cupo-lleno-tag { color: #ef4444; font-weight: 700; }
 
+  /* Notificaciones flotantes — pensada para mobile primero */
+  .toast-container {
+    position: fixed; left: 0; right: 0; z-index: 1200;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    pointer-events: none; padding: 0 14px;
+  }
+  .toast-card {
+    pointer-events: auto; position: relative; max-width: 420px; width: 100%;
+    background: linear-gradient(155deg, var(--card) 0%, var(--card-2) 130%);
+    border: 1px solid var(--line); border-radius: 16px; padding: 14px 32px 14px 14px;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.5); display: flex; gap: 11px; align-items: flex-start;
+    opacity: 0; transform: translateY(28px) scale(0.94);
+    transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
+  }
+  @media(min-width: 480px) {
+    .toast-container { bottom: calc(22px + env(safe-area-inset-bottom, 0px)); padding: 0 20px; }
+    .toast-card { padding: 16px 34px 16px 16px; gap: 12px; }
+  }
+  .toast-card.show { opacity: 1; transform: translateY(0) scale(1); }
+  .toast-card.hide { opacity: 0; transform: translateY(14px) scale(0.95); transition: opacity 0.25s ease, transform 0.25s ease; }
+  .toast-icon {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--lime-dim); color: var(--lime);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    animation: toastPulse 1.8s ease-in-out infinite;
+  }
+  @media(min-width: 480px) { .toast-icon { width: 38px; height: 38px; } }
+  @keyframes toastPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  .toast-body { flex: 1; min-width: 0; }
+  .toast-title { font-family: var(--font-display); font-weight: 800; font-size: 0.86rem; margin-bottom: 3px; line-height: 1.25; }
+  .toast-sub { font-size: 0.75rem; color: var(--grey); margin-bottom: 10px; line-height: 1.4; }
+  @media(min-width: 480px) {
+    .toast-title { font-size: 0.9rem; }
+    .toast-sub { font-size: 0.78rem; margin-bottom: 11px; }
+  }
+  .toast-btn {
+    font-family: var(--font-display); font-weight: 800; font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase;
+    padding: 9px 14px; border-radius: 8px; border: none; background: var(--lime); color: #0b1408; cursor: pointer;
+    white-space: nowrap;
+  }
+  .toast-btn:hover { filter: brightness(1.08); }
+  .toast-close {
+    position: absolute; top: 8px; right: 8px; background: none; border: none; color: var(--grey);
+    cursor: pointer; font-size: 0.85rem; width: 26px; height: 26px; border-radius: 50%; line-height: 1;
+  }
+  .toast-close:hover { color: var(--white); background: var(--card-2); }
+  .toast-progress {
+    position: absolute; left: 0; bottom: 0; height: 3px; background: var(--lime);
+    border-radius: 0 0 0 16px; animation-name: toastProgress; animation-timing-function: linear; animation-fill-mode: forwards;
+  }
+  @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
+
+  /* Selector de torneo personalizado (no usa el <select> nativo del celular) */
+  .custom-select { position: relative; }
+  .custom-select-btn {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    min-width: 190px; padding: 10px 14px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--card-2); color: var(--white); font-family: var(--font-display); font-weight: 700; font-size: 0.82rem;
+    cursor: pointer; text-align: left;
+  }
+  .custom-select-btn:hover { border-color: var(--blue); }
+  .custom-select-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .custom-select-arrow { flex-shrink: 0; transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1); }
+  .custom-select.open .custom-select-arrow { transform: rotate(180deg); }
+  .custom-select-panel {
+    position: absolute; top: calc(100% + 8px); left: 0; right: 0; min-width: 220px; max-height: 320px; overflow-y: auto;
+    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border: 1px solid var(--line);
+    border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.5); z-index: 60;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transform: translateY(-10px) scaleY(0.95); transform-origin: top;
+    transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1), visibility 0s linear 0.22s;
+  }
+  .custom-select.open .custom-select-panel {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scaleY(1);
+    transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  .custom-select-option {
+    padding: 11px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-bottom: 1px solid var(--line);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .custom-select-option:last-child { border-bottom: none; }
+  .custom-select-option:hover, .custom-select-option.active { background: var(--blue-dim); color: var(--blue); }
+
+  /* Revelado al scrollear: la página se va "construyendo" a medida que bajás */
+  .reveal {
+    opacity: 0; transform: translateY(38px);
+    transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.reveal-visible { opacity: 1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+
   footer { 
     padding: 26px 5vw; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 14px; 
     border-top: 1px solid var(--line); color: var(--grey); font-size: 0.8rem; background: rgba(8, 11, 18, 0.95);
@@ -588,7 +706,9 @@
     <div class="brand-name">TRAINING Y<span>PÁDEL MIRAMAR</span></div>
   </div>
   <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    <span class="nav-toggle-bar"></span>
+    <span class="nav-toggle-bar"></span>
+    <span class="nav-toggle-bar"></span>
   </button>
   <div class="navlinks" id="navlinks">
     <a href="#" class="active">INICIO</a>
@@ -664,7 +784,7 @@
 <!-- Sección Llaves Centradas con Conectores -->
 <section id="llaves">
   <div class="sec-head">
-    <div class="sec-title">
+    <div class="sec-title reveal">
       LLAVE DEL TORNEO
     </div>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
@@ -683,7 +803,7 @@
 <!-- Sección Próximos Partidos -->
 <section id="proximos">
   <div class="sec-head">
-    <div class="sec-title">
+    <div class="sec-title reveal">
       PRÓXIMOS PARTIDOS
     </div>
     <div style="display:flex; align-items:center; gap:14px;">
@@ -698,7 +818,7 @@
 <!-- Categorías / Torneos -->
 <section id="torneos">
   <div class="sec-head">
-    <div class="sec-title">TORNEOS Y CATEGORÍAS</div>
+    <div class="sec-title reveal">TORNEOS Y CATEGORÍAS</div>
   </div>
   <div class="torneos-grid" id="torneos-grid"></div>
 </section>
@@ -706,7 +826,7 @@
 <!-- Sección Formulario e Info Cards -->
 <section id="inscripcion">
   <div class="sec-head">
-    <div class="sec-title">INSCRIPCIÓN DE PAREJA</div>
+    <div class="sec-title reveal">INSCRIPCIÓN DE PAREJA</div>
   </div>
   <div class="inscripcion-login-gate" id="inscripcion-gate">
     <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--blue);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -770,6 +890,9 @@
   <div class="perfil-card" id="perfil-card"></div>
 </div>
 
+<!-- Notificaciones (ej: "se abrió la inscripción de tu categoría") -->
+<div class="toast-container" id="toast-container"></div>
+
 <footer id="contacto">
   <div>© 2026 Training y Pádel Miramar. Todos los derechos reservados.</div>
   <div class="footer-brand">
@@ -787,8 +910,9 @@ import {
   isCategoriaSuma, getCategoriaLabel, getRondaLabel,
   crearCuentaJugador, iniciarSesionJugador, cerrarSesionJugador,
   obtenerMiPerfil, asegurarMiPerfil, buscarJugadoresRegistrados, resolverJugadorDesdePerfil,
-  encontrarJugadorIdPorPerfil, calcularRankingPorCategoria, getJugadorPartidosStats, getCupoInfo
-} from './shared.js?v=14';
+  encontrarJugadorIdPorPerfil, calcularRankingPorCategoria, getJugadorPartidosStats, getCupoInfo,
+  actualizarSelectorCustom, activarReveal
+} from './shared.js?v=16';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let state = null;
@@ -821,9 +945,9 @@ function cupoHtml(t){
 function renderTorneosGrid(){
   const grid = document.getElementById('torneos-grid');
   if(!state?.torneos?.length){ grid.innerHTML = '<div class="empty-note">Todavía no hay torneos cargados.</div>'; return; }
-  grid.innerHTML = state.torneos.map(t=>{
+  grid.innerHTML = state.torneos.map((t, i)=>{
     return `
-      <div class="torneo-card">
+      <div class="torneo-card reveal" style="transition-delay:${Math.min(i, 8) * 90}ms;">
         <div>
           <span class="badge ${t.inscripcionAbierta ? 'badge-abierto' : 'badge-cerrado'}">${t.inscripcionAbierta ? 'Inscripción Abierta' : 'Inscripción Cerrada'}</span>
           ${t.genero ? `<span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);">${TORNEO_GENEROS[t.genero]}</span>` : ''}
@@ -844,7 +968,10 @@ function renderTorneosGrid(){
       </div>
     `;
   }).join('');
+  activarReveal(grid);
 }
+
+// Revelado al scrollear: ver activarReveal() en shared.js.
 
 function escapeHtml(str){
   return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -949,11 +1076,11 @@ function renderProximosPartidos(){
     return;
   }
 
-  grid.innerHTML = partidos.map(p=>{
+  grid.innerHTML = partidos.map((p, i)=>{
     const [nomA1='', nomA2=''] = (p.equipoA||'').split(' / ');
     const [nomB1='', nomB2=''] = (p.equipoB||'').split(' / ');
     return `
-      <div class="match-card">
+      <div class="match-card reveal" style="transition-delay:${Math.min(i, 10) * 130}ms;">
         <div class="match-head">
           ${catTagHtml(p.categoria)}
           <div class="match-meta">
@@ -985,6 +1112,7 @@ function renderProximosPartidos(){
       </div>
     `;
   }).join('');
+  activarReveal(grid);
 }
 
 // Recordamos el torneo y la categoría que el visitante venía mirando, porque
@@ -1005,11 +1133,119 @@ const RECARGA_MANUAL = (() => {
 
 const STORAGE_KEY_TORNEO = 'padelmiramar:torneoSeleccionado';
 const STORAGE_KEY_CATEGORIA = 'padelmiramar:categoriaLlave';
+const STORAGE_KEY_NOTIFICADOS = 'padelmiramar:torneosNotificados';
 function guardarSeleccion(key, value){
   try{ sessionStorage.setItem(key, value); }catch(err){ /* modo privado u otro bloqueo: seguimos sin persistir */ }
 }
 function leerSeleccion(key){
   try{ return sessionStorage.getItem(key); }catch(err){ return null; }
+}
+
+// Para cada torneo, guardamos CUÁNDO fue la última vez que le avisamos al
+// jugador (en vez de un simple "ya avisado sí/no"), para poder recordárselo
+// de nuevo si sigue en la página después de un rato sin haberse anotado. Si
+// es una recarga manual (F5), arranca de cero — igual que con el torneo y la
+// categoría seleccionados.
+const INTERVALO_RENOTIFICAR_MS = 2 * 60 * 1000; // 2 minutos
+let ultimaNotificacionPorTorneo = {};
+if(!RECARGA_MANUAL){
+  try{
+    ultimaNotificacionPorTorneo = JSON.parse(leerSeleccion(STORAGE_KEY_NOTIFICADOS) || '{}');
+  }catch(err){ ultimaNotificacionPorTorneo = {}; }
+}
+
+// Si ya tiene una pareja pendiente o aprobada en ese torneo, no tiene sentido
+// seguir invitándolo a inscribirse — ya lo hizo.
+function yaSeInscribioEnTorneo(t){
+  const miJugadorId = encontrarJugadorIdPorPerfil(state, miPerfil);
+  if(!miJugadorId) return false;
+  return Object.values(t.parejas || {}).some(lista =>
+    (lista || []).some(p => (p.j1_id === miJugadorId || p.j2_id === miJugadorId) && p.estado !== 'rechazada')
+  );
+}
+
+// Si el jugador logueado tiene una categoría cargada en su cuenta y hay un
+// torneo con inscripción abierta en esa categoría (con cupo disponible, y en
+// el que todavía no se anotó) le mostramos una notificación flotante — y se
+// la repetimos cada 2 minutos mientras siga en la página sin haberse anotado.
+function chequearNotificacionTorneo(){
+  if(!session || !miPerfil || !miPerfil.categoria || !state) return;
+  const ahora = Date.now();
+  const candidatos = state.torneos.filter(t => {
+    if(!t.inscripcionAbierta) return false;
+    if(!(t.categorias || []).includes(miPerfil.categoria)) return false;
+    if(getCupoInfo(t)?.lleno) return false;
+    if(yaSeInscribioEnTorneo(t)) return false;
+    const ultima = ultimaNotificacionPorTorneo[t.id];
+    return !ultima || (ahora - ultima) >= INTERVALO_RENOTIFICAR_MS;
+  });
+  candidatos.forEach(t => mostrarNotificacionTorneo(t));
+}
+
+// Función genérica de notificación flotante (toast), reutilizada tanto para
+// el aviso de "se abrió tu categoría" como para confirmaciones simples (ej:
+// "postulación enviada"). `accionHtml` es opcional (un botón extra adentro).
+function crearToast({ icono, titulo, subtitulo, duracion = 9000, accionHtml = '', onAccion = null }){
+  const el = document.createElement('div');
+  el.className = 'toast-card';
+  el.innerHTML = `
+    <div class="toast-icon">${icono}</div>
+    <div class="toast-body">
+      <div class="toast-title">${titulo}</div>
+      ${subtitulo ? `<div class="toast-sub">${subtitulo}</div>` : ''}
+      ${accionHtml}
+    </div>
+    <button type="button" class="toast-close" aria-label="Cerrar">✕</button>
+    <div class="toast-progress" style="animation-duration:${duracion}ms;"></div>
+  `;
+  document.getElementById('toast-container').appendChild(el);
+  requestAnimationFrame(()=> requestAnimationFrame(()=> el.classList.add('show')));
+
+  let cerrado = false;
+  function cerrar(){
+    if(cerrado) return;
+    cerrado = true;
+    clearTimeout(timeoutId);
+    el.classList.remove('show');
+    el.classList.add('hide');
+    setTimeout(()=> el.remove(), 260);
+  }
+  const timeoutId = setTimeout(cerrar, duracion);
+
+  el.querySelector('.toast-close').onclick = cerrar;
+  if(onAccion){
+    const btn = el.querySelector('.toast-btn');
+    if(btn) btn.onclick = ()=>{ onAccion(); cerrar(); };
+  }
+  return cerrar;
+}
+
+const ICONO_ESTRELLA = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 2l2.4 5.6L20 8.3l-4.2 3.9 1.1 5.8L12 15l-4.9 3 1.1-5.8L4 8.3l5.6-.7z"/></svg>`;
+const ICONO_CHECK = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M20 6L9 17l-5-5"/></svg>`;
+
+function mostrarNotificacionTorneo(t){
+  ultimaNotificacionPorTorneo[t.id] = Date.now();
+  guardarSeleccion(STORAGE_KEY_NOTIFICADOS, JSON.stringify(ultimaNotificacionPorTorneo));
+
+  const info = getCupoInfo(t);
+  const cupoTexto = !info
+    ? 'sin límite de cupos'
+    : info.disponibles === 1 ? 'queda 1 lugar' : `quedan ${info.disponibles} lugares`;
+
+  crearToast({
+    icono: ICONO_ESTRELLA,
+    titulo: '¡Se abrió la inscripción de tu categoría!',
+    subtitulo: `${escapeHtml(t.nombre)} · ${getCategoriaLabel(state, miPerfil.categoria)} · ${cupoTexto}`,
+    accionHtml: `<button type="button" class="toast-btn">Inscribirme ahora</button>`,
+    onAccion: ()=>{
+      const inscT = document.getElementById('insc-torneo');
+      if(inscT.querySelector(`option[value="${t.id}"]`)){
+        inscT.value = t.id;
+        inscT.dispatchEvent(new Event('change'));
+      }
+      document.getElementById('inscripcion').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
 }
 
 let catLlaveActiva = null;
@@ -1206,6 +1442,10 @@ document.getElementById('tab-vista-parejas').onclick = ()=>{
   renderVistaLlave();
 };
 
+// Selector de torneo con menú desplegable propio (en vez del <select> nativo,
+// que en el celular abre el picker del sistema operativo). Ver
+// actualizarSelectorCustom en shared.js para el detalle de cómo funciona.
+
 function populateSelectors(){
   const selT = document.getElementById('select-torneo');
   const inscT = document.getElementById('insc-torneo');
@@ -1229,6 +1469,7 @@ function populateSelectors(){
       const soloUna = (t?.categorias||[]).length <= 1;
       inscCField.style.display = soloUna ? 'none' : '';
     }
+    actualizarSelectorCustom(target);
   }
 
   // A diferencia de antes, ya no se le pide a nadie que elija su categoría a mano
@@ -1246,6 +1487,8 @@ function populateSelectors(){
 
   poblarCategoriaPillsLlave(selT.value);
   actualizarTabsVista(selT.value);
+  actualizarSelectorCustom(selT);
+  actualizarSelectorCustom(inscT);
   if(torneosConInscripcion.length > 0){
     refreshCatOptions(inscT.value, inscC);
     refreshSumaFields();
@@ -1255,6 +1498,7 @@ function populateSelectors(){
     guardarSeleccion(STORAGE_KEY_TORNEO, selT.value);
     poblarCategoriaPillsLlave(selT.value);
     actualizarTabsVista(selT.value);
+    actualizarSelectorCustom(selT);
     renderVistaLlave();
   };
   inscT.onchange = ()=>{ refreshCatOptions(inscT.value, inscC); refreshSumaFields(); };
@@ -1426,7 +1670,11 @@ document.getElementById('insc-form').addEventListener('submit', async function(e
   try{
     await saveState(supabase, state);
     closeAuthModal();
-    alert('¡Postulación enviada correctamente!');
+    crearToast({
+      icono: ICONO_CHECK,
+      titulo: 'Tu postulación fue enviada',
+      subtitulo: 'Te vamos a avisar cuando el club la revise.',
+    });
     this.reset();
     companeroElegido = null;
     renderTorneosGrid();
@@ -1480,6 +1728,7 @@ loginFormModal.addEventListener('submit', async (e)=>{
     await cargarSesionYPerfil();
     closeAuthModal();
     renderInscripcionSection();
+    chequearNotificacionTorneo();
   }catch(err){
     errorEl.textContent = 'Email o contraseña incorrectos.';
   }
@@ -1505,6 +1754,7 @@ signupFormModal.addEventListener('submit', async (e)=>{
       await cargarSesionYPerfil();
       closeAuthModal();
       renderInscripcionSection();
+      chequearNotificacionTorneo();
     } else {
       noteEl.style.display = 'block';
       noteEl.textContent = 'Te mandamos un mail para confirmar tu cuenta. Una vez confirmada, iniciá sesión.';
@@ -1732,7 +1982,10 @@ setupScrollSpy();
     renderVistaLlave();
     poblarFiltroCategoriaProximos();
     renderProximosPartidos();
+    chequearNotificacionTorneo();
+    activarReveal();
     setInterval(pollUpdatesPublicas, 4000);
+    setInterval(chequearNotificacionTorneo, 20000);
   }catch(e){
     console.error(e);
     const msg = `<div class="empty-note">No se pudo cargar la información. Probá recargar la página. (${escapeHtml(e.message || e)})</div>`;
@@ -1763,6 +2016,7 @@ async function pollUpdatesPublicas(){
       renderVistaLlave();
       poblarFiltroCategoriaProximos();
       renderProximosPartidos();
+      chequearNotificacionTorneo();
     }
   }catch(e){
     console.error('Error en polling:', e);

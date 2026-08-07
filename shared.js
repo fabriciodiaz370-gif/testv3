@@ -292,6 +292,118 @@ export function encontrarJugadorIdPorPerfil(state, perfil){
   return porNombre ? porNombre.id : null;
 }
 
+// ============================================================
+// Selector con menú desplegable propio (reemplazo visual de <select>)
+// ============================================================
+// En mobile, un <select> nativo abre el picker del sistema operativo (la
+// rueda de Android/iOS), que no se puede ni animar ni estilizar. Esta
+// función arma, al lado de un <select> ya existente, un menú propio animado
+// que muestra las mismas opciones — el <select> original se oculta pero
+// sigue existiendo en el DOM: ahí sigue viviendo el valor real, y el resto
+// del código sigue funcionando exactamente igual (leyendo selectEl.value,
+// escuchando selectEl.addEventListener('change', ...), etc.).
+//
+// Se llama de nuevo cada vez que cambian las <option> del select (por
+// ejemplo, después de reconstruir su innerHTML), para que el menú visual se
+// mantenga sincronizado.
+let _customSelectListenerGlobal = false;
+
+function _cerrarSelectorCustom(wrap){
+  wrap.classList.remove('open');
+  const btn = wrap.querySelector('.custom-select-btn');
+  if(btn) btn.setAttribute('aria-expanded', 'false');
+}
+function _abrirSelectorCustom(wrap){
+  document.querySelectorAll('.custom-select.open').forEach(w => { if(w !== wrap) _cerrarSelectorCustom(w); });
+  wrap.classList.add('open');
+  const btn = wrap.querySelector('.custom-select-btn');
+  if(btn) btn.setAttribute('aria-expanded', 'true');
+}
+
+export function actualizarSelectorCustom(selectEl){
+  if(!selectEl) return;
+  selectEl.style.display = 'none';
+  selectEl.setAttribute('aria-hidden', 'true');
+  selectEl.tabIndex = -1;
+
+  let wrap = selectEl.nextElementSibling;
+  if(!wrap || !wrap.classList || !wrap.classList.contains('custom-select-generated')){
+    wrap = document.createElement('div');
+    wrap.className = 'custom-select custom-select-generated';
+    wrap.innerHTML = `
+      <button type="button" class="custom-select-btn" aria-haspopup="listbox" aria-expanded="false">
+        <span class="custom-select-label">Elegí una opción</span>
+        <svg class="custom-select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="custom-select-panel" role="listbox"></div>
+    `;
+    selectEl.insertAdjacentElement('afterend', wrap);
+
+    wrap.querySelector('.custom-select-btn').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      wrap.classList.contains('open') ? _cerrarSelectorCustom(wrap) : _abrirSelectorCustom(wrap);
+    });
+
+    if(!_customSelectListenerGlobal){
+      document.addEventListener('click', (e)=>{
+        document.querySelectorAll('.custom-select.open').forEach(w=>{
+          if(!w.contains(e.target)) _cerrarSelectorCustom(w);
+        });
+      });
+      _customSelectListenerGlobal = true;
+    }
+  }
+
+  const panel = wrap.querySelector('.custom-select-panel');
+  const label = wrap.querySelector('.custom-select-label');
+  const opciones = Array.from(selectEl.options);
+
+  panel.innerHTML = opciones.map(o =>
+    `<div class="custom-select-option${o.value === selectEl.value ? ' active' : ''}" data-value="${o.value}" role="option">${o.textContent}</div>`
+  ).join('');
+  const actual = opciones.find(o => o.value === selectEl.value);
+  label.textContent = actual ? actual.textContent : 'Elegí una opción';
+
+  panel.querySelectorAll('.custom-select-option').forEach(opt=>{
+    opt.onclick = ()=>{
+      label.textContent = opt.textContent;
+      panel.querySelectorAll('.custom-select-option').forEach(o => o.classList.toggle('active', o === opt));
+      if(opt.dataset.value !== selectEl.value){
+        selectEl.value = opt.dataset.value;
+        selectEl.dispatchEvent(new Event('change'));
+      }
+      _cerrarSelectorCustom(wrap);
+    };
+  });
+}
+
+// ============================================================
+// Revelado al scrollear ("la página se va construyendo")
+// ============================================================
+// Cualquier elemento con clase "reveal" arranca invisible/corrido, y cuando
+// entra en pantalla se le agrega "reveal-visible" (clase que dispara la
+// transición suave, definida en el CSS de cada página) — sin escuchar el
+// evento scroll a mano, con IntersectionObserver. Una vez revelado, se deja
+// de observar (no vuelve a ocultarse si subís de nuevo).
+let _revealObserver = null;
+function _getRevealObserver(){
+  if(!_revealObserver){
+    _revealObserver = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){
+          entry.target.classList.add('reveal-visible');
+          _revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  }
+  return _revealObserver;
+}
+export function activarReveal(contenedor){
+  const observer = _getRevealObserver();
+  (contenedor || document).querySelectorAll('.reveal:not(.reveal-visible)').forEach(el => observer.observe(el));
+}
+
 // Cupo máximo de parejas para todo el torneo (no por categoría, según se
 // definió). Cuenta sólo las parejas ya APROBADAS, sumando entre todas las
 // categorías del torneo — las pendientes de revisión todavía no ocupan lugar.

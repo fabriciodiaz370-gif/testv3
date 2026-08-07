@@ -139,6 +139,47 @@ font-family:var(--font-display);font-weight:800;color:var(--lime);border:2px sol
 
 .empty-note{color:var(--grey);font-size:0.9rem;padding:30px;background:var(--card);border:1px dashed var(--line);border-radius:14px;text-align:center;}
 
+/* Selector con menú desplegable propio (no usa el picker nativo del celular) */
+.custom-select { position: relative; display: inline-block; }
+.custom-select-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-width: 150px; padding: 10px 14px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--card-2); color: var(--white); font-family: var(--font-display); font-weight: 700; font-size: 0.82rem;
+  cursor: pointer; text-align: left;
+}
+.custom-select-btn:hover { border-color: var(--blue); }
+.custom-select-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.custom-select-arrow { flex-shrink: 0; transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1); }
+.custom-select.open .custom-select-arrow { transform: rotate(180deg); }
+.custom-select-panel {
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0; min-width: 180px; max-height: 320px; overflow-y: auto;
+  background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.5); z-index: 60;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transform: translateY(-10px) scaleY(0.95); transform-origin: top;
+  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1), visibility 0s linear 0.22s;
+}
+.custom-select.open .custom-select-panel {
+  opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scaleY(1);
+  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.custom-select-option {
+  padding: 11px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-bottom: 1px solid var(--line);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.custom-select-option:last-child { border-bottom: none; }
+.custom-select-option:hover, .custom-select-option.active { background: var(--blue-dim); color: var(--blue); }
+
+/* Revelado al scrollear: la página se va "construyendo" a medida que bajás */
+.reveal {
+  opacity: 0; transform: translateY(38px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.reveal-visible { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
 footer {
 padding: 26px 5vw; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 14px;
 border-top: 1px solid var(--line); color: var(--grey); font-size: 0.8rem; background: rgba(8, 11, 18, 0.95);
@@ -173,7 +214,7 @@ text-align: center;
 
 <section id="ranking">
 <div class="sec-head">
-<div class="sec-title">
+<div class="sec-title reveal">
 <svg class="sec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 21h8M12 17v4M6 4h12v3a6 6 0 01-12 0V4z"/><path d="M6 5H3v2a4 4 0 004 4M18 5h3v2a4 4 0 01-4 4"/></svg>
 RANKING DE JUGADORES
 </div>
@@ -197,8 +238,9 @@ RANKING DE JUGADORES
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
 SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, GENEROS,
-loadState, calcularRankingPorCategoria, getJugadorPartidosStats, getAllCategorias, getCategoriaLabel
-} from './shared.js?v=13';
+loadState, calcularRankingPorCategoria, getJugadorPartidosStats, getAllCategorias, getCategoriaLabel,
+actualizarSelectorCustom, activarReveal
+} from './shared.js?v=16';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let state = null;
@@ -222,6 +264,7 @@ if(getAllCategorias(state).includes('7ma')){
 sel.value = '7ma';
 }
 sel.onchange = renderRanking;
+actualizarSelectorCustom(sel);
 }
 
 function populateGeneroSelect(){
@@ -232,6 +275,7 @@ if(GENEROS['femenino']){
 sel.value = 'femenino';
 }
 sel.onchange = renderRanking;
+actualizarSelectorCustom(sel);
 }
 
 function renderRanking(){
@@ -247,7 +291,7 @@ return;
 }
 
 content.innerHTML = `
-   <div class="table-scroll">
+   <div class="table-scroll reveal">
    <table class="ranking-table">
      <colgroup>
        <col class="col-puesto"><col class="col-jugador"><col class="col-ganados"><col class="col-puntos">
@@ -280,7 +324,7 @@ content.innerHTML = `
    </table>
    </div>
  `;
-
+activarReveal(content);
 }
 
 function setupNavToggle(){
@@ -319,6 +363,7 @@ state = await loadState(supabase);
 populateCategoriaSelect();
 populateGeneroSelect();
 renderRanking();
+activarReveal();
 setInterval(pollUpdates, 3000);
 }catch(e){
 console.error(e);
