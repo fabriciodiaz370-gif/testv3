@@ -689,27 +689,35 @@ export function roundLabel(idx, total){
 // ============================================================
 // Capa de datos (Supabase) — un único documento JSON en la tabla "torneos"
 // ============================================================
+
+// Migraciones/valores por defecto que se le aplican a cualquier state recién
+// leído, venga de donde venga: de un select() normal (loadState) o de un
+// aviso de Supabase Realtime (ver suscribirseATorneo más abajo) — separado
+// en su propia función para no duplicar esta lista en los dos lugares.
+function normalizarState(state){
+  if(!state.jugadores) state.jugadores = [];
+  if(!state.config) state.config = { puntos: {...DEFAULT_PUNTOS_CONFIG} };
+  if(!state.config.puntos) state.config.puntos = {...DEFAULT_PUNTOS_CONFIG};
+  if(!state.config.categoriasSuma) state.config.categoriasSuma = [...DEFAULT_CATEGORIAS_SUMA];
+  // Compatibilidad con torneos guardados antes de que existiera "partidos" / "inscripcionAbierta"
+  (state.torneos || []).forEach(t=>{
+    if(!t.partidos) t.partidos = [];
+    if(t.inscripcionAbierta === undefined) t.inscripcionAbierta = true;
+    if(t.genero === undefined) t.genero = null; // torneos viejos: sin restricción de género hasta que el admin lo configure
+  });
+  // Completa el historial permanente de partidos ganados/perdidos con los cruces
+  // que ya estaban jugados antes de que existiera este registro (o algún torneo
+  // que se haya guardado sin pasar por registrarResultadoPartido). Así, cuando
+  // se borre un torneo, esos partidos ya quedaron a salvo en cada jugador.
+  backfillHistorialPartidos(state);
+  return state;
+}
+
 export async function loadState(supabase){
   const { data, error } = await supabase.from('torneos').select('data').eq('id','main').maybeSingle();
   if(error) throw error;
   if(data && data.data){
-    const state = data.data;
-    if(!state.jugadores) state.jugadores = [];
-    if(!state.config) state.config = { puntos: {...DEFAULT_PUNTOS_CONFIG} };
-    if(!state.config.puntos) state.config.puntos = {...DEFAULT_PUNTOS_CONFIG};
-    if(!state.config.categoriasSuma) state.config.categoriasSuma = [...DEFAULT_CATEGORIAS_SUMA];
-    // Compatibilidad con torneos guardados antes de que existiera "partidos" / "inscripcionAbierta"
-    (state.torneos || []).forEach(t=>{
-      if(!t.partidos) t.partidos = [];
-      if(t.inscripcionAbierta === undefined) t.inscripcionAbierta = true;
-      if(t.genero === undefined) t.genero = null; // torneos viejos: sin restricción de género hasta que el admin lo configure
-    });
-    // Completa el historial permanente de partidos ganados/perdidos con los cruces
-    // que ya estaban jugados antes de que existiera este registro (o algún torneo
-    // que se haya guardado sin pasar por registrarResultadoPartido). Así, cuando
-    // se borre un torneo, esos partidos ya quedaron a salvo en cada jugador.
-    backfillHistorialPartidos(state);
-    return state;
+    return normalizarState(data.data);
   }
   const seeded = seedDemoData();
   await saveState(supabase, seeded);
@@ -721,6 +729,67 @@ export async function saveState(supabase, state){
     id: 'main', data: state, updated_at: new Date().toISOString()
   });
   if(error) throw error;
+}
+
+// ============================================================
+// Sincronización en vivo (Supabase Realtime, con respaldo por polling)
+// ============================================================
+// Antes, cada página preguntaba "¿cambió algo?" cada 2-4 segundos sin parar
+// mientras estuviera abierta (eso es lo que se veía en la pestaña Network
+// del navegador: un pedido tras otro). Acá, en cambio, nos suscribimos una
+// sola vez a los cambios de la fila "main" de la tabla "torneos": Supabase
+// nos avisa por un canal en tiempo real apenas el admin guarda algo, sin que
+// tengamos que estar preguntando nosotros.
+//
+// Para que esto funcione hace falta activar, UNA sola vez, la replicación
+// de esa tabla desde el panel de Supabase (Database → Replication → tildar
+// "torneos"), o correr en el SQL Editor:
+//   alter publication supabase_realtime add table torneos;
+//
+// Por si esa activación no está hecha, o la conexión en tiempo real se corta
+// un rato (puede pasar con redes inestables), dejamos además un chequeo de
+// respaldo bastante espaciado (30s por defecto, mucho menos seguido que
+// antes) para que la página nunca se quede mostrando datos viejos para
+// siempre en el peor de los casos.
+//
+// Devuelve un objeto con:
+//   - detener(): corta la suscripción y el respaldo (no se usa hoy, pero
+//     queda disponible por si en el futuro hiciera falta).
+//   - marcarComoPropio(state): la usa quien GUARDA cambios (ver persist() en
+//     admin.html) para avisar "esto lo acabo de guardar yo, ya lo tengo en
+//     pantalla" — así el eco de tu propio guardado (Supabase también te
+//     avisa a vos cuando guardás) no dispara un re-render de más.
+export function suscribirseATorneo(supabase, onCambio, { fallbackMs = 30000, estadoInicial = null } = {}){
+  let ultimoJson = estadoInicial ? JSON.stringify(estadoInicial) : null;
+
+  function aplicarSiCambio(state){
+    const json = JSON.stringify(state);
+    if(json === ultimoJson) return;
+    ultimoJson = json;
+    onCambio(state);
+  }
+
+  const canal = supabase
+    .channel('torneos-main-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'torneos', filter: 'id=eq.main' }, (payload)=>{
+      if(payload.new && payload.new.data){
+        aplicarSiCambio(normalizarState(payload.new.data));
+      }
+    })
+    .subscribe();
+
+  const intervalId = setInterval(async ()=>{
+    try{
+      aplicarSiCambio(await loadState(supabase));
+    }catch(err){
+      console.error('Error en el chequeo de respaldo:', err);
+    }
+  }, fallbackMs);
+
+  return {
+    detener: ()=>{ supabase.removeChannel(canal); clearInterval(intervalId); },
+    marcarComoPropio: (state)=>{ ultimoJson = JSON.stringify(state); }
+  };
 }
 
 // ============================================================
