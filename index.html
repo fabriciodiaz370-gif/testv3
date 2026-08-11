@@ -947,6 +947,24 @@
   </div>
 </div>
 
+<!-- Pedido de permiso de notificaciones: aparece solo, apenas iniciás sesión
+     (si todavía no activaste ni rechazaste el permiso en este navegador).
+     El cartel nativo del sistema ("Permitir/Bloquear") recién se dispara si
+     tocás "Sí, activar" acá adentro — los navegadores no dejan mostrarlo sin
+     que haya un toque de por medio. -->
+<div class="pwa-modal-overlay" id="notif-permiso-modal">
+  <div class="pwa-modal-box">
+    <div class="pwa-modal-title">¿Querés recibir notificaciones?</div>
+    <div class="pwa-modal-body" style="margin-bottom:20px;">
+      Te avisamos cuando te acepten en un torneo, te programen un partido o se abra la inscripción en tu categoría.
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button type="button" class="btn btn-primary btn-action" id="notif-permiso-si" style="flex:1 1 auto;">Sí, activar</button>
+      <button type="button" class="btn btn-outline" id="notif-permiso-no" style="flex:1 1 auto;">Ahora no</button>
+    </div>
+  </div>
+</div>
+
 <footer id="contacto">
   <div>© 2026 Training y Pádel Miramar. Todos los derechos reservados.</div>
   <div class="footer-brand">
@@ -2047,14 +2065,19 @@ function renderNavAuth(){
   }
 }
 
-// Botón "Activar notificaciones" en el header: se oculta solo si este
-// dispositivo ya tiene una suscripción activa (no hace falta tocarlo de
-// nuevo). Al tocarlo, pide el permiso del sistema y, si la persona acepta,
-// guarda la suscripción — a partir de ahí ya puede recibir avisos aunque
-// tenga la app cerrada.
+// Botón "Activar notificaciones" en el header: queda como respaldo manual
+// para quien haya cerrado el cartel automático diciendo "Ahora no" y después
+// se arrepienta. Se oculta si este dispositivo ya tiene una suscripción
+// activa, o si el permiso ya quedó bloqueado a nivel sistema (ahí no hay
+// nada que un botón pueda hacer — solo se puede destrabar desde los ajustes
+// del navegador/celular).
 async function wireBotonNotif(){
   const btn = document.getElementById('btn-notif-nav');
   if(!btn) return;
+  if(typeof Notification !== 'undefined' && Notification.permission === 'denied'){
+    btn.style.display = 'none';
+    return;
+  }
   const suscripcionActual = await obtenerSuscripcionPushActual();
   if(suscripcionActual){ btn.style.display = 'none'; return; }
 
@@ -2070,6 +2093,57 @@ async function wireBotonNotif(){
       btn.disabled = false; btn.textContent = 'Activar notificaciones';
     }
   };
+}
+
+// ============================================================
+// Cartel automático de "¿Querés recibir notificaciones?"
+// ============================================================
+// Se muestra solo (sin que la persona tenga que ir a buscar un botón) apenas
+// inicia sesión, pero solo si: el navegador soporta push, todavía no
+// contestó nada a nivel sistema (ni activó ni bloqueó), no hay ya una
+// suscripción guardada en este dispositivo, y no se lo mostramos ya en esta
+// misma carga de página (para no ser pesados si por algún motivo se vuelve
+// a llamar a cargarSesionYPerfil).
+let _notifModalYaMostrada = false;
+
+async function intentarMostrarModalNotificaciones(){
+  if(_notifModalYaMostrada) return;
+  if(!session || !miPerfil) return;
+  if(!soportaNotificacionesPush()) return;
+  if(typeof Notification === 'undefined' || Notification.permission !== 'default') return;
+  const suscripcionActual = await obtenerSuscripcionPushActual();
+  if(suscripcionActual) return;
+
+  const modal = document.getElementById('notif-permiso-modal');
+  if(!modal) return;
+  _notifModalYaMostrada = true;
+  modal.classList.add('open');
+}
+
+function wireModalNotificaciones(){
+  const modal = document.getElementById('notif-permiso-modal');
+  if(!modal) return;
+  const btnSi = document.getElementById('notif-permiso-si');
+  const btnNo = document.getElementById('notif-permiso-no');
+
+  btnSi.onclick = async ()=>{
+    btnSi.disabled = true; btnSi.textContent = 'Activando…';
+    try{
+      await activarNotificacionesPush(supabase, session.user.id);
+    }catch(err){
+      console.error('No se pudo activar notificaciones:', err);
+    }finally{
+      modal.classList.remove('open');
+      btnSi.disabled = false; btnSi.textContent = 'Sí, activar';
+      renderNavAuth(); // por si el botón del header también debe ocultarse ahora
+    }
+  };
+
+  btnNo.onclick = ()=>{
+    modal.classList.remove('open');
+  };
+
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); });
 }
 
 const TEXTO_GATE_DEFAULT = 'Para inscribir tu pareja necesitás una cuenta. Creála o iniciá sesión — te va a pedir tus datos una sola vez.';
@@ -2102,6 +2176,7 @@ async function cargarSesionYPerfil(){
     esAdminActual = false;
   }
   renderNavAuth();
+  intentarMostrarModalNotificaciones();
 }
 
 // En mobile, el navegador dispara "resize" también cuando se esconde/muestra
@@ -2141,6 +2216,7 @@ function setupNavToggle(){
   });
 }
 setupNavToggle();
+wireModalNotificaciones();
 
 function setupScrollSpy(){
   const navLinksEls = Array.from(document.querySelectorAll('.navlinks a'));
