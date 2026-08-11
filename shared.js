@@ -820,19 +820,28 @@ function _pwaEsIOS(){
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent) && !window.MSStream;
 }
 
+// El service worker hace falta siempre — no solo para que el navegador
+// considere el sitio instalable, sino porque además es el que recibe las
+// notificaciones push (ver más abajo). Por eso se registra apenas carga
+// cualquier página, esté instalada como app o no (antes solo se registraba
+// si NO estaba instalada, lo que dejaba sin service worker a alguien que
+// abriera la app ya instalada sin haber pasado antes por el navegador).
+export function registrarServiceWorker(){
+  if('serviceWorker' in navigator){
+    return navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
+  return Promise.resolve(null);
+}
+
 export function setupPwaInstall(){
+  registrarServiceWorker();
+
   const btn = document.getElementById('btn-instalar-app');
   if(!btn) return;
 
   if(_pwaEsStandalone()){
     btn.style.display = 'none';
     return;
-  }
-
-  // El service worker es requisito técnico para que el navegador considere
-  // el sitio instalable — no cachea nada por ahora, solo habilita la PWA.
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }
 
   if(_pwaEsIOS()){
@@ -868,4 +877,131 @@ export function setupPwaInstall(){
     btn.style.display = 'none';
     _pwaDeferredPrompt = null;
   });
+}
+
+// ============================================================
+// Notificaciones push
+// ============================================================
+// Notificaciones reales del sistema operativo (con sonido, aunque la app
+// esté cerrada), tanto en Android como en iPhone instalada desde Safari
+// (iOS 16.4+). No queda ningún historial guardado: el push se manda una
+// sola vez y listo, la notificación vive y muere en el teléfono de la
+// persona.
+//
+// Clave pública VAPID: identifica a este sitio como emisor válido de
+// notificaciones. No es secreta, va sí o sí en el código del cliente. Su
+// contraparte privada vive SOLO como secreto en la Edge Function
+// "enviar-notificacion" (ver supabase/functions/enviar-notificacion) y
+// nunca debe subirse acá.
+export const VAPID_PUBLIC_KEY = 'BO22rFmxScPI3B8zpbf-5AJffd4_jdNHBWOegVEYbp82CbpC_XET4mJ9k-ohWtv6OkLj-RK-7ho7KwmE-d9aa3M';
+
+function _urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+export function soportaNotificacionesPush(){
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+// Suscripción push activa en ESTE dispositivo/navegador, o null si no hay
+// ninguna (todavía no la activó, o la borró desde los ajustes del sistema).
+export async function obtenerSuscripcionPushActual(){
+  if(!soportaNotificacionesPush()) return null;
+  try{
+    const registration = await navigator.serviceWorker.ready;
+    return await registration.pushManager.getSubscription();
+  }catch(e){
+    return null;
+  }
+}
+
+// Le pide permiso a la persona y, si acepta, la suscribe y guarda la
+// suscripción en Supabase ligada a su cuenta (authId). Tira error si el
+// navegador no soporta push, si la persona no da el permiso, o si falla el
+// guardado — quien llama a esta función es responsable de mostrar ese error
+// (por ejemplo con un alert o un toast).
+export async function activarNotificacionesPush(supabase, authId){
+  if(!soportaNotificacionesPush()){
+    throw new Error('Este navegador no soporta notificaciones push. En iPhone, instalá la app a la pantalla de inicio desde Safari primero.');
+  }
+  const permiso = await Notification.requestPermission();
+  if(permiso !== 'granted'){
+    throw new Error('No se concedió el permiso de notificaciones.');
+  }
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+  if(!subscription){
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+  }
+  const raw = subscription.toJSON();
+  const { error } = await supabase.from('push_subscriptions').upsert({
+    auth_id: authId,
+    endpoint: raw.endpoint,
+    p256dh: raw.keys.p256dh,
+    auth_key: raw.keys.auth,
+  }, { onConflict: 'endpoint' });
+  if(error) throw error;
+  return subscription;
+}
+
+// Da de baja las notificaciones en ESTE dispositivo (no en los demás
+// dispositivos donde la persona las haya activado).
+export async function desactivarNotificacionesPush(supabase){
+  const subscription = await obtenerSuscripcionPushActual();
+  if(!subscription) return;
+  const endpoint = subscription.endpoint;
+  await subscription.unsubscribe().catch(()=>{});
+  await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint).catch(()=>{});
+}
+
+// Dispara el envío real de las notificaciones, delegando en la Edge
+// Function "enviar-notificacion" (ella tiene la clave privada VAPID y hace
+// el envío de verdad). Se llama "en paralelo" al guardado normal del
+// estado — si falla, no debe romper el flujo de la app (por eso quien la
+// usa la llama sin bloquear el resto y logueando el error nomás).
+export async function dispararNotificacion(supabase, { authIds, titulo, cuerpo, url }){
+  const idsUnicos = [...new Set((authIds || []).filter(Boolean))];
+  if(idsUnicos.length === 0) return { ok: true, enviados: 0 };
+  const { data, error } = await supabase.functions.invoke('enviar-notificacion', {
+    body: { authIds: idsUnicos, titulo, cuerpo, url },
+  });
+  if(error) throw error;
+  return data;
+}
+
+// De una lista de ids de jugadores (state.jugadores[].id), devuelve los
+// authId de los que tienen cuenta creada (solo esos pueden tener una
+// suscripción push guardada).
+export function authIdsDeJugadorIds(state, jugadorIds){
+  const jugadores = state.jugadores || [];
+  return (jugadorIds || [])
+    .map(id => jugadores.find(j => j.id === id))
+    .filter(Boolean)
+    .map(j => j.authId)
+    .filter(Boolean);
+}
+
+// Jugadores que "calzan" con un torneo recién abierto a inscripción: misma
+// categoría individual (las categorías "Suma" quedan afuera de este chequeo
+// porque no hay forma de saber si una pareja las cumple a partir de la
+// categoría individual de un solo jugador) y género compatible (si el
+// torneo es masculino/femenino, mismo género del jugador; si es mixto,
+// cualquiera de los dos). Devuelve solo los authId (con cuenta creada).
+export function authIdsElegiblesParaTorneo(state, torneo){
+  const categoriasPlanas = (torneo.categorias || []).filter(c => !isCategoriaSuma(c));
+  if(categoriasPlanas.length === 0) return [];
+  const jugadores = state.jugadores || [];
+  return jugadores
+    .filter(j => j.authId && categoriasPlanas.includes(j.categoria))
+    .filter(j => {
+      if(!torneo.genero || torneo.genero === 'mixto') return true;
+      return j.genero === torneo.genero;
+    })
+    .map(j => j.authId);
 }

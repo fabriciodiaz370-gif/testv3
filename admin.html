@@ -203,8 +203,9 @@ import {
   uid, generateBracket, propagateWinner, roundLabel, loadState, saveState, isAprobada,
   resolverJugadorId, registrarResultadoPartido, getPuntosConfig, DEFAULT_PUNTOS_CONFIG, POSICION_LABELS,
   isCategoriaSuma, getAllCategorias, getCategoriaLabel, getCategoriasSumaConfig,
-  RONDA_LABELS, RONDA_OPCIONES, getRondaLabel, getCupoInfo, suscribirseATorneo
-} from './shared.js?v=18';
+  RONDA_LABELS, RONDA_OPCIONES, getRondaLabel, getCupoInfo, suscribirseATorneo,
+  dispararNotificacion, authIdsDeJugadorIds, authIdsElegiblesParaTorneo
+} from './shared.js?v=19';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById('app');
@@ -224,6 +225,16 @@ function toast(msg){
   toastEl.textContent = msg;
   toastEl.classList.add('show');
   setTimeout(()=>toastEl.classList.remove('show'), 1800);
+}
+
+// Dispara una notificación push sin bloquear ni romper el resto del flujo:
+// si falla (por ejemplo, la Edge Function todavía no está desplegada, o el
+// jugador nunca activó las notificaciones), solo lo dejamos en consola — el
+// guardado de los datos ya se hizo antes de llamar a esta función.
+function avisarPush(authIds, titulo, cuerpo, url){
+  if(!authIds || authIds.length === 0) return;
+  dispararNotificacion(supabase, { authIds, titulo, cuerpo, url: url || './index.html' })
+    .catch(err => console.error('No se pudo enviar la notificación push:', err));
 }
 
 async function persist(){
@@ -396,7 +407,18 @@ function wireTorneoPanel(t){
   };
 
   document.getElementById('btn-insc-abierta').onclick = ()=>{
+    const estabaCerrada = !t.inscripcionAbierta;
     t.inscripcionAbierta = true; persist(); render();
+    // Avisamos "se abrió tu categoría" solo en la transición de cerrada a
+    // abierta (si ya estaba abierta y tocás el botón de nuevo, no se manda
+    // otra vez), y solo si ya se configuraron categorías.
+    if(estabaCerrada && t.categorias.length > 0){
+      avisarPush(
+        authIdsElegiblesParaTorneo(state, t),
+        '¡Nuevo torneo en tu categoría!',
+        `Se abrió la inscripción de "${t.nombre}". Anotate desde la web.`
+      );
+    }
   };
   document.getElementById('btn-insc-cerrada').onclick = ()=>{
     t.inscripcionAbierta = false; persist(); render();
@@ -525,14 +547,27 @@ function wirePostulacionesPanel(t){
         if(!confirm(`Este torneo ya llegó a su cupo de ${cupoInfo.cupo} parejas. ¿Aprobar igual?`)) return;
       }
       p.estado = 'aprobada'; persist(); render();
+      avisarPush(
+        authIdsDeJugadorIds(state, [p.j1_id, p.j2_id]),
+        '¡Pareja aprobada!',
+        `Tu pareja para ${getCategoriaLabel(state,cat)} en "${t.nombre}" fue aprobada.`
+      );
     };
   });
   document.querySelectorAll('[data-rechazar]').forEach(btn=>{
     btn.onclick = ()=>{
       const [cat, id] = btn.dataset.rechazar.split(':');
       if(!confirm('¿Rechazar?')) return;
+      const p = (t.parejas[cat]||[]).find(x=>x.id===id);
       t.parejas[cat] = (t.parejas[cat]||[]).filter(x=>x.id!==id);
       persist(); render();
+      if(p){
+        avisarPush(
+          authIdsDeJugadorIds(state, [p.j1_id, p.j2_id]),
+          'Postulación rechazada',
+          `Tu postulación para ${getCategoriaLabel(state,cat)} en "${t.nombre}" fue rechazada.`
+        );
+      }
     };
   });
 }
