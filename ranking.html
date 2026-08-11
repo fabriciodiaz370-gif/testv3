@@ -32,8 +32,11 @@
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
-background: var(--bg) url('hero-banner-padel-bg-blue.png') center/cover no-repeat fixed;
+background: var(--bg) url('hero-banner-padel-bg-blue.png') center/cover no-repeat scroll;
 color: var(--white); font-family: var(--font-body); line-height: 1.5;
+}
+@media(min-width:920px) {
+body { background-attachment: fixed; }
 }
 a { color: inherit; text-decoration: none; }
 button, select, input { font-family: var(--font-body); }
