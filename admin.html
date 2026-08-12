@@ -195,13 +195,13 @@
      cómodo de leer y tocar con el dedo.
   ====================================================================== */
   @media(max-width:639px){
-    nav{padding:12px 3vw;}
+    nav{padding:12px 2.5vw;}
     .brand{font-size:0.95rem;}
     .navlink{font-size:0.8rem;padding:9px 13px;}
-    .section-tabs{padding:12px 3vw;gap:7px;}
+    .section-tabs{padding:12px 2.5vw;gap:7px;}
     .section-tab{font-size:0.82rem;padding:10px 15px;}
-    .main{padding:14px 3vw 50px;}
-    .panel{padding:14px;border-radius:12px;margin-bottom:14px;}
+    .main{padding:14px 2vw 50px;}
+    .panel{padding:12px 10px;border-radius:10px;margin-bottom:14px;}
     .panel h2{font-size:1.05rem;}
     .grid-2, .grid-3{gap:16px;}
 
@@ -212,19 +212,22 @@
     .check-pill{font-size:0.86rem;padding:10px 17px;}
     .tab{font-size:0.86rem;padding:10px 19px;}
 
-    .pareja-row, .jugador-row{padding:13px 15px;}
+    .pareja-row, .jugador-row{padding:12px 10px;}
     .pareja-row .nombre, .jugador-row .nombre{font-size:0.94rem;}
     .foto-preview{width:66px;height:66px;}
 
     /* La llave: en vez de forzar scroll horizontal, en celular las rondas
        se apilan una debajo de la otra a todo el ancho disponible — así no
-       hay que deslizar para el costado y se lee/toca todo más grande. */
-    .bracket-wrap{overflow-x:visible;}
-    .bracket{flex-direction:column;min-width:0;gap:26px;}
-    .round{min-width:0;gap:12px;}
-    .round-label{text-align:left;font-size:0.8rem;margin-bottom:6px;padding-left:2px;}
-    .match{padding:14px;font-size:0.96rem;}
-    .match .side{padding:9px 4px;gap:10px;}
+       hay que deslizar para el costado y se lee/toca todo más grande. El
+       padding de cada tarjeta se achica (no así el texto) para que el
+       contenido gane todo el ancho posible: los bordes negros al costado
+       venían de sumar el padding del panel + el padding de cada tarjeta. */
+    .bracket-wrap{overflow-x:visible;padding-top:4px;}
+    .bracket{flex-direction:column;min-width:0;gap:22px;}
+    .round{min-width:0;gap:10px;}
+    .round-label{text-align:left;font-size:0.8rem;margin-bottom:6px;padding-left:0;}
+    .match{padding:12px 10px;font-size:0.96rem;}
+    .match .side{padding:8px 0;gap:10px;}
     .win-btn{font-size:0.82rem;padding:9px 15px;}
   }
 </style>
