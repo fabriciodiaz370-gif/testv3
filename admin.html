@@ -90,6 +90,10 @@
   @media(min-width:640px){.grid-2{grid-template-columns:1fr 1fr;}}
   .grid-3{display:grid;grid-template-columns:1fr;gap:14px;}
   @media(min-width:760px){.grid-3{grid-template-columns:1fr 1fr 1fr;}}
+  /* Mismo motivo que .layout > *: sin esto, cualquier cosa angosta-pero-con-
+     contenido-ancho adentro de una de estas grillas (como el panel de
+     "Parejas y llave") vuelve a empujar el ancho de toda la página. */
+  .grid-2 > *, .grid-3 > *{min-width:0;}
   .field{margin-bottom:0;}
 
   .check-pill{
