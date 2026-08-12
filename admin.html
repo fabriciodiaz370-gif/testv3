@@ -44,7 +44,7 @@
   @media(min-width:640px){ .section-tabs{padding:20px 4vw;gap:8px;} .section-tab{font-size:0.85rem;padding:10px 18px;} }
   .section-tab.active{background:var(--lime);color:#0B0B0B;border-color:var(--lime);}
 
-  .layout{display:grid;grid-template-columns:1fr;gap:0;max-width:1400px;margin:0 auto;}
+  .layout{display:grid;grid-template-columns:1fr;gap:0;max-width:1800px;margin:0 auto;}
   @media(min-width:900px){.layout{grid-template-columns:280px 1fr;}}
   /* Los hijos de un grid no se achican por debajo del contenido más ancho
      que tengan adentro (acá, la llave del torneo, que necesita 700px para
@@ -111,8 +111,8 @@
   }
   .pareja-row .nombre, .jugador-row .nombre{font-size:0.88rem;font-weight:600;min-width:0;word-break:break-word;}
   .pareja-row > div, .jugador-row > div{min-width:0;}
-  .pareja-row .x, .jugador-row .x{cursor:pointer;color:var(--grey);width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .pareja-row .x:hover, .jugador-row .x:hover{color:var(--red);background:var(--red-dim);}
+  .pareja-row .x, .jugador-row .x{cursor:pointer;color:var(--red);width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .pareja-row .x:hover, .jugador-row .x:hover{background:var(--red-dim);}
   
   .foto-preview{width:60px;height:60px;border-radius:8px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
   .foto-preview img{width:100%;height:100%;object-fit:cover;}
@@ -123,8 +123,11 @@
 
   .empty-state{color:var(--grey);font-size:0.88rem;text-align:center;padding:30px 10px;}
 
+  /* overflow-x:auto queda como red de seguridad nomás — con el escalado
+     automático (ver fitBracketAdmin en el script) la llave se achica para
+     entrar entera en el ancho disponible, así no hace falta deslizar. */
   .bracket-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-top:6px;}
-  .bracket{display:flex;gap:36px;min-width:700px;}
+  .bracket{display:flex;gap:36px;min-width:700px;transform-origin:top left;}
   .round{display:flex;flex-direction:column;justify-content:space-around;gap:14px;flex:1;min-width:190px;}
   .round-label{text-align:center;font-size:0.68rem;font-weight:700;color:var(--grey);letter-spacing:0.08em;margin-bottom:4px;}
   .match{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:0.8rem;}
@@ -133,10 +136,10 @@
   .match .side.bye{color:var(--grey);font-style:italic;}
   .match .side.tbd{color:var(--grey);}
   .win-btn{
-    font-size:0.68rem;font-weight:700;padding:5px 9px;border-radius:6px;border:1px solid var(--line);
-    background:transparent;color:var(--grey);cursor:pointer;flex-shrink:0;
+    font-size:0.68rem;font-weight:700;padding:5px 9px;border-radius:6px;border:1px solid var(--lime);
+    background:var(--lime-dim);color:var(--lime);cursor:pointer;flex-shrink:0;
   }
-  .win-btn:hover{border-color:var(--lime);color:var(--lime);}
+  .win-btn:hover{background:var(--lime);color:#0B0B0B;}
   .decided-tag{font-size:0.68rem;color:var(--lime);}
 
   .toast{
@@ -734,7 +737,7 @@ function renderCategoriaContent(t, cat){
       <div>
         <label>Llave — ${getCategoriaLabel(state,cat)}</label>
         ${ bracket
-            ? '<div class="bracket-wrap"><div class="bracket" id="bracket-view"></div></div>'
+            ? '<div class="bracket-wrap" id="bracket-wrap"><div class="bracket" id="bracket-view"></div></div>'
             : (parejas.length === 0
                 ? '<div class="empty-state">Todavía no hay parejas cargadas.</div>'
                 : `
@@ -856,7 +859,37 @@ function renderBracketView(t, cat){
       persist(); render();
     };
   });
+
+  // La esperamos un toque para que el navegador ya haya acomodado el DOM
+  // recién insertado antes de medirlo (si no, a veces mide 0 y no achica nada).
+  setTimeout(fitBracketAdmin, 30);
 }
+
+// Achica la llave completa (sin cambiar cómo se arma, ronda por ronda) para
+// que entre entera en el ancho disponible, tal cual se hace en la vista
+// pública (ver fitBracketToScreen en index.html) — así no hace falta
+// deslizar para el costado en el celular. El overflow-x:auto de
+// .bracket-wrap queda solo como red de seguridad para pantallas
+// extremadamente angostas donde ni así entraría bien.
+function fitBracketAdmin(){
+  const wrap = document.getElementById('bracket-wrap');
+  const el = document.getElementById('bracket-view');
+  if(!wrap || !el) return;
+
+  el.style.transform = 'none';
+  wrap.style.height = 'auto';
+
+  const availableWidth = wrap.clientWidth;
+  const naturalWidth = el.scrollWidth;
+  const naturalHeight = el.scrollHeight;
+  const scale = naturalWidth > availableWidth ? availableWidth / naturalWidth : 1;
+
+  el.style.transform = `scale(${scale})`;
+  wrap.style.height = (naturalHeight * scale) + 'px';
+}
+window.addEventListener('resize', ()=>{
+  if(document.getElementById('bracket-wrap')) fitBracketAdmin();
+});
 
 async function crearTorneo(){
   const nombre = await mostrarPromptModal('Nombre del torneo', { placeholder: 'Ej: Apertura Marzo', textoOk: 'Crear' });
