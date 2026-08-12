@@ -123,20 +123,21 @@
 
   .empty-state{color:var(--grey);font-size:0.88rem;text-align:center;padding:30px 10px;}
 
-  /* overflow-x:auto queda como red de seguridad nomás — con el escalado
-     automático (ver fitBracketAdmin en el script) la llave se achica para
-     entrar entera en el ancho disponible, así no hace falta deslizar. */
+  /* La llave mantiene su tamaño natural (nada de achicarla con scale) y usa
+     scroll horizontal propio cuando no entra — así el texto y los botones
+     siguen siendo cómodos de leer/tocar en el celular, en vez de quedar
+     diminutos. */
   .bracket-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-top:6px;}
-  .bracket{display:flex;gap:36px;min-width:700px;transform-origin:top left;}
-  .round{display:flex;flex-direction:column;justify-content:space-around;gap:14px;flex:1;min-width:190px;}
-  .round-label{text-align:center;font-size:0.68rem;font-weight:700;color:var(--grey);letter-spacing:0.08em;margin-bottom:4px;}
-  .match{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:0.8rem;}
-  .match .side{display:flex;align-items:center;justify-content:space-between;padding:6px 4px;gap:6px;}
+  .bracket{display:flex;gap:36px;min-width:760px;}
+  .round{display:flex;flex-direction:column;justify-content:space-around;gap:16px;flex:1;min-width:220px;}
+  .round-label{text-align:center;font-size:0.72rem;font-weight:700;color:var(--grey);letter-spacing:0.08em;margin-bottom:4px;}
+  .match{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:0.88rem;}
+  .match .side{display:flex;align-items:center;justify-content:space-between;padding:7px 4px;gap:8px;}
   .match .side.winner{color:var(--lime);font-weight:700;}
   .match .side.bye{color:var(--grey);font-style:italic;}
   .match .side.tbd{color:var(--grey);}
   .win-btn{
-    font-size:0.68rem;font-weight:700;padding:5px 9px;border-radius:6px;border:1px solid var(--lime);
+    font-size:0.76rem;font-weight:700;padding:7px 12px;border-radius:6px;border:1px solid var(--lime);
     background:var(--lime-dim);color:var(--lime);cursor:pointer;flex-shrink:0;
   }
   .win-btn:hover{background:var(--lime);color:#0B0B0B;}
@@ -737,7 +738,7 @@ function renderCategoriaContent(t, cat){
       <div>
         <label>Llave — ${getCategoriaLabel(state,cat)}</label>
         ${ bracket
-            ? '<div class="bracket-wrap" id="bracket-wrap"><div class="bracket" id="bracket-view"></div></div>'
+            ? '<div class="bracket-wrap"><div class="bracket" id="bracket-view"></div></div>'
             : (parejas.length === 0
                 ? '<div class="empty-state">Todavía no hay parejas cargadas.</div>'
                 : `
@@ -859,37 +860,1420 @@ function renderBracketView(t, cat){
       persist(); render();
     };
   });
-
-  // La esperamos un toque para que el navegador ya haya acomodado el DOM
-  // recién insertado antes de medirlo (si no, a veces mide 0 y no achica nada).
-  setTimeout(fitBracketAdmin, 30);
 }
 
-// Achica la llave completa (sin cambiar cómo se arma, ronda por ronda) para
-// que entre entera en el ancho disponible, tal cual se hace en la vista
-// pública (ver fitBracketToScreen en index.html) — así no hace falta
-// deslizar para el costado en el celular. El overflow-x:auto de
-// .bracket-wrap queda solo como red de seguridad para pantallas
-// extremadamente angostas donde ni así entraría bien.
-function fitBracketAdmin(){
-  const wrap = document.getElementById('bracket-wrap');
-  const el = document.getElementById('bracket-view');
-  if(!wrap || !el) return;
-
-  el.style.transform = 'none';
-  wrap.style.height = 'auto';
-
-  const availableWidth = wrap.clientWidth;
-  const naturalWidth = el.scrollWidth;
-  const naturalHeight = el.scrollHeight;
-  const scale = naturalWidth > availableWidth ? availableWidth / naturalWidth : 1;
-
-  el.style.transform = `scale(${scale})`;
-  wrap.style.height = (naturalHeight * scale) + 'px';
+async function crearTorneo(){
+  const nombre = await mostrarPromptModal('Nombre del torneo', { placeholder: 'Ej: Apertura Marzo', textoOk: 'Crear' });
+  if(!nombre) return;
+  const nuevo = {
+    // Arranca con la inscripción CERRADA a propósito: así, cuando el admin
+    // termine de configurar categorías/género y recién ahí toque "Abiertas",
+    // se dispara de verdad la notificación de "nuevo torneo en tu categoría"
+    // (si ya arrancara abierto, ese primer click nunca pasaría de cerrado a
+    // abierto, y la notificación no se mandaría nunca).
+    id: uid('t'), nombre, fecha:'', lugar:'', estado:'abierto', inscripcionAbierta: false,
+    genero: 'masculino', // se puede cambiar después desde el panel del torneo
+    categorias: [], parejas:{}, brackets:{}, partidos: [], cupo: null
+  };
+  state.torneos.push(nuevo);
+  activeTorneoId = nuevo.id;
+  persist(); render();
 }
-window.addEventListener('resize', ()=>{
-  if(document.getElementById('bracket-wrap')) fitBracketAdmin();
+
+// ---- PANEL: PRÓXIMOS PARTIDOS (fecha/hora/cancha para mostrar en la web pública) ----
+function formatFechaCorta(fecha){
+  if(!fecha) return '';
+  const [y,m,d] = fecha.split('-').map(Number);
+  if(!y||!m||!d) return fecha;
+  return `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
+}
+
+// ---- SECCIÓN PARTIDOS ----
+function renderPartidosSection(){
+  const el = document.getElementById('section-partidos');
+  if(!state.torneos || state.torneos.length===0){
+    el.innerHTML = `<div class="panel"><h2>Partidos</h2><div class="empty-state">Todavía no hay torneos creados.</div></div>`;
+    return;
+  }
+  if(!partidosTorneoId || !state.torneos.find(x=>x.id===partidosTorneoId)){
+    partidosTorneoId = state.torneos[0].id;
+  }
+  const t = state.torneos.find(x=>x.id===partidosTorneoId);
+  el.innerHTML = `
+    <div class="panel">
+      <h2>Programar partidos</h2>
+      <div class="field" style="max-width:420px;">
+        <label>Torneo</label>
+        <select id="pp-torneo">
+          ${state.torneos.map(tr=>`<option value="${tr.id}" ${tr.id===t.id?'selected':''}>${escapeHtml(tr.nombre)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    ${renderPartidosPanel(t)}
+  `;
+  document.getElementById('pp-torneo').onchange = (e)=>{
+    partidosTorneoId = e.target.value;
+    render();
+  };
+  wirePartidosPanel(t);
+}
+
+function renderPartidosPanel(t){
+  if(!t.categorias || t.categorias.length===0){
+    return `<div class="panel"><h2>Próximos partidos</h2><div class="empty-state">Agregá al menos una categoría para poder programar partidos.</div></div>`;
+  }
+  const partidos = (t.partidos || []).slice().sort((a,b)=> (a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+  return `
+    <div class="panel">
+      <h2>Próximos partidos</h2>
+      <div class="grid-3" style="margin-bottom:14px;">
+        <div class="field"><label>Categoría</label><select id="pp-cat">${t.categorias.map(c=>`<option value="${c}">${getCategoriaLabel(state,c)}</option>`).join('')}</select></div>
+        <div class="field"><label>Pareja A</label><select id="pp-a"></select></div>
+        <div class="field"><label>Pareja B</label><select id="pp-b"></select></div>
+      </div>
+      <div class="grid-3" style="margin-bottom:14px;">
+        <div class="field"><label>Fecha</label><input type="date" id="pp-fecha"></div>
+        <div class="field"><label>Hora</label><input type="time" id="pp-hora"></div>
+        <div class="field"><label>Cancha</label><input id="pp-cancha" placeholder="Cancha 1"></div>
+      </div>
+      <div class="field" style="max-width:280px;margin-bottom:14px;">
+        <label>Ronda (opcional)</label>
+        <select id="pp-ronda">
+          <option value="">Sin ronda</option>
+          ${RONDA_OPCIONES.map(r=>`<option value="${r}">${RONDA_LABELS[r]}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-primary btn-block" id="btn-add-partido" style="margin-bottom:18px;">+ Programar partido</button>
+      <label>Partidos programados (${partidos.length})</label>
+      <div id="partidos-list">
+        ${partidos.length===0 ? '<div class="empty-state">Todavía no hay partidos programados.</div>' :
+          partidos.map(p=>`
+            <div class="pareja-row">
+              <span class="nombre">
+                <span style="color:var(--lime);font-weight:800;">${getCategoriaLabel(state,p.categoria)}</span>
+                ${p.ronda ? `<span style="color:var(--grey);font-weight:700;"> · ${getRondaLabel(p.ronda)}</span>` : ''}
+                — ${escapeHtml(p.equipoA)} vs ${escapeHtml(p.equipoB)}
+                <span style="display:block;color:var(--grey);font-size:0.78rem;font-weight:500;">${formatFechaCorta(p.fecha)}${p.hora?` — ${p.hora}`:''}${p.cancha?` · ${escapeHtml(p.cancha)}`:''}</span>
+              </span>
+              <span class="x" data-remove-partido="${p.id}">✕</span>
+            </div>
+          `).join('')
+        }
+      </div>
+    </div>
+  `;
+}
+
+function wirePartidosPanel(t){
+  const selCat = document.getElementById('pp-cat');
+  if(!selCat) return; // no hay categorías todavía
+
+  const selA = document.getElementById('pp-a');
+  const selB = document.getElementById('pp-b');
+
+  function refreshParejaOptions(){
+    const cat = selCat.value;
+    const parejas = (t.parejas[cat] || []).filter(isAprobada);
+    const opts = parejas.map(p=>`<option value="${p.id}">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}</option>`).join('');
+    selA.innerHTML = opts || '<option value="">Sin parejas aprobadas</option>';
+    selB.innerHTML = opts || '<option value="">Sin parejas aprobadas</option>';
+  }
+  refreshParejaOptions();
+  selCat.onchange = refreshParejaOptions;
+
+  document.getElementById('btn-add-partido').onclick = ()=>{
+    const cat = selCat.value;
+    const parejas = (t.parejas[cat] || []).filter(isAprobada);
+    const pA = parejas.find(p=>p.id===selA.value);
+    const pB = parejas.find(p=>p.id===selB.value);
+    const fecha = document.getElementById('pp-fecha').value;
+    const hora = document.getElementById('pp-hora').value;
+    const cancha = document.getElementById('pp-cancha').value.trim();
+    const ronda = document.getElementById('pp-ronda').value;
+    if(!pA || !pB){ toast('Elegí las dos parejas'); return; }
+    if(pA.id === pB.id){ toast('Elegí dos parejas distintas'); return; }
+    if(!fecha){ toast('Elegí una fecha'); return; }
+    t.partidos = t.partidos || [];
+    t.partidos.push({
+      id: uid('partido'), categoria: cat,
+      equipoA: `${pA.j1} / ${pA.j2}`, equipoB: `${pB.j1} / ${pB.j2}`,
+      fecha, hora, cancha, ronda, jugado: false
+    });
+    persist(); render();
+  };
+
+  document.querySelectorAll('[data-remove-partido]').forEach(el=>{
+    el.onclick = ()=>{
+      t.partidos = (t.partidos || []).filter(p=>p.id !== el.dataset.removePartido);
+      persist(); render();
+    };
+  });
+}
+
+// ---- SECCIÓN CONFIGURACIÓN ----
+function renderConfigSection(){
+  const el = document.getElementById('section-config');
+  if(!state.config) state.config = { puntos: {...DEFAULT_PUNTOS_CONFIG} };
+  if(!state.config.puntos) state.config.puntos = {...DEFAULT_PUNTOS_CONFIG};
+  const p = state.config.puntos;
+
+  const sumaActuales = getCategoriasSumaConfig(state);
+
+  el.innerHTML = `
+    <div class="panel">
+      <h2>Categorías "Suma"</h2>
+      <p style="color:var(--grey);font-size:0.85rem;margin-bottom:18px;max-width:60ch;">
+        Creá las categorías Suma que necesites (Suma 5, Suma 11, Suma 14, Suma 16, la que sea).
+        La categoría de la pareja sale de sumar la categoría individual de cada jugador. Una vez creadas,
+        vas a poder tildarlas como cualquier otra categoría al armar un torneo.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        ${sumaActuales.length===0 ? '<div class="empty-state">Todavía no creaste ninguna.</div>' :
+          sumaActuales.map(n=>`
+            <div class="check-pill active" style="display:flex;align-items:center;gap:8px;">
+              Suma ${n}
+              <span class="x" data-quitar-suma="${n}" style="cursor:pointer;">✕</span>
+            </div>
+          `).join('')
+        }
+      </div>
+      <div style="display:flex;gap:10px;max-width:320px;">
+        <input type="number" min="2" step="1" id="nueva-suma" placeholder="Ej: 16">
+        <button class="btn btn-primary btn-sm" id="btn-agregar-suma">+ Agregar</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Puntos de ranking por posición final</h2>
+      <p style="color:var(--grey);font-size:0.85rem;margin-bottom:18px;max-width:60ch;">
+        Definí cuántos puntos recibe cada jugador de la pareja según cómo terminó el torneo.
+        Se suman solos al marcar "Ganó" en la llave: el que pierde queda eliminado en esa
+        instancia y el campeón se define al cerrar la final.
+      </p>
+      <div class="grid-3">
+        ${Object.keys(POSICION_LABELS).map(key=>`
+          <div class="field">
+            <label>${POSICION_LABELS[key]}</label>
+            <input type="number" min="0" step="1" id="cfg-${key}" value="${p[key] ?? DEFAULT_PUNTOS_CONFIG[key] ?? 0}">
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:18px;">
+        <button class="btn btn-primary" id="btn-guardar-config">Guardar configuración</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('btn-guardar-config').onclick = ()=>{
+    Object.keys(POSICION_LABELS).forEach(key=>{
+      const val = parseInt(document.getElementById('cfg-'+key).value, 10);
+      p[key] = isNaN(val) ? 0 : val;
+    });
+    persist();
+  };
+
+  document.getElementById('btn-agregar-suma').onclick = ()=>{
+    const input = document.getElementById('nueva-suma');
+    const n = parseInt(input.value, 10);
+    if(!n || n<2){ toast('Ingresá un número válido'); return; }
+    state.config.categoriasSuma = state.config.categoriasSuma || [];
+    if(state.config.categoriasSuma.includes(n)){ toast(`Suma ${n} ya existe`); return; }
+    state.config.categoriasSuma.push(n);
+    persist(); render();
+  };
+
+  document.querySelectorAll('[data-quitar-suma]').forEach(el=>{
+    el.onclick = async ()=>{
+      const n = parseInt(el.dataset.quitarSuma, 10);
+      const code = 'suma' + n;
+      const enUso = state.torneos.some(t=>(t.categorias||[]).includes(code));
+      if(enUso){ toast(`Suma ${n} está en uso en algún torneo, no se puede quitar`); return; }
+      const ok = await mostrarConfirmModal(`¿Quitar Suma ${n}?`, { titulo: 'Quitar categoría Suma', peligroso: true });
+      if(!ok) return;
+      state.config.categoriasSuma = (state.config.categoriasSuma||[]).filter(x=>x!==n);
+      persist(); render();
+    };
+  });
+}
+
+// ---- SECCIÓN JUGADORES ----
+function renderJugadoresSection(){
+  const el = document.getElementById('section-jugadores');
+  el.innerHTML = `
+    <div class="panel">
+      <h2>Gestión de Jugadores <span style="color:var(--grey);font-weight:500;font-size:0.8rem;">(${(state.jugadores||[]).length})</span>
+        <button class="btn btn-primary btn-sm" id="btn-nuevo-jugador">+ Nuevo Jugador</button>
+      </h2>
+      <div class="field" style="margin-bottom:14px;">
+        <label>Buscar jugador</label>
+        <input id="jugadores-search" placeholder="Escribí un nombre..." value="${escapeHtml(jugadoresSearchQuery)}">
+      </div>
+      <div class="add-jugador-form" id="add-jugador-form" style="display:none;">
+        <input id="new-jug-nombre" placeholder="Nombre y apellido">
+        <select id="new-jug-cat">
+          ${CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('')}
+        </select>
+        <select id="new-jug-genero">
+          ${Object.entries(GENEROS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <select id="new-jug-lat">
+          ${Object.entries(LATERALIDADES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary btn-sm" id="btn-guardar-nuevo-jugador">Guardar</button>
+        <button class="btn btn-outline btn-sm" id="btn-cancelar-nuevo-jugador">Cancelar</button>
+      </div>
+      <div id="jugadores-list"></div>
+    </div>
+  `;
+
+  const list = document.getElementById('jugadores-list');
+  const query = jugadoresSearchQuery.trim().toLowerCase();
+  const jugadoresFiltrados = (state.jugadores || []).filter(j =>
+    !query || (j.nombre || '').toLowerCase().includes(query)
+  );
+
+  if(!state.jugadores || state.jugadores.length===0){
+    list.innerHTML = '<div class="empty-state">Sin jugadores aún.</div>';
+  } else if(jugadoresFiltrados.length===0){
+    list.innerHTML = `<div class="empty-state">No hay jugadores que coincidan con "${escapeHtml(jugadoresSearchQuery)}".</div>`;
+  } else {
+    list.innerHTML = jugadoresFiltrados.map(j=>{
+      // Suma TODOS los puntos del historial (no solo los de su categoría fija), porque
+      // puede haber sumado puntos jugando en una categoría distinta a la suya propia.
+      const puntos = (j.historial||[]).reduce((s,h)=>s+(h.puntos_ganados||0),0);
+      return `
+      <div class="jugador-row">
+        <div style="display:flex;gap:10px;align-items:center;flex:1;">
+          <div class="foto-preview ${j.foto?'':'empty'}" id="foto-${j.id}">
+            ${j.foto ? `<img src="${j.foto}" alt="${j.nombre}">` : '📷'}
+          </div>
+          <div>
+            <div class="nombre">${escapeHtml(j.nombre)}</div>
+            <div style="font-size:0.75rem;color:var(--grey);">${CATEGORIA_LABEL[j.categoria] || j.categoria} · ${j.genero ? (GENEROS[j.genero]||j.genero) : '<span style="color:var(--red);">Sin género</span>'} · ${LATERALIDADES[j.lateralidad] || j.lateralidad} · <span style="color:var(--lime);font-weight:700;">${puntos} pts</span></div>
+          </div>
+        </div>
+        <span style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" data-edit="${j.id}">Editar</button>
+          <button class="btn btn-danger btn-sm" data-delete="${j.id}">Borrar</button>
+        </span>
+      </div>`;
+    }).join('');
+  }
+
+  const searchInput = document.getElementById('jugadores-search');
+  searchInput.oninput = ()=>{
+    jugadoresSearchQuery = searchInput.value;
+    const cursorPos = searchInput.selectionStart;
+    renderJugadoresSection();
+    const newInput = document.getElementById('jugadores-search');
+    newInput.focus();
+    newInput.setSelectionRange(cursorPos, cursorPos);
+  };
+
+  const formEl = document.getElementById('add-jugador-form');
+
+  document.getElementById('btn-nuevo-jugador').onclick = ()=>{
+    formEl.style.display = formEl.style.display==='none' ? 'flex' : 'none';
+    if(formEl.style.display==='flex') document.getElementById('new-jug-nombre').focus();
+  };
+
+  document.getElementById('btn-cancelar-nuevo-jugador').onclick = ()=>{
+    formEl.style.display = 'none';
+  };
+
+  document.getElementById('btn-guardar-nuevo-jugador').onclick = crearJugador;
+  document.getElementById('new-jug-nombre').addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); crearJugador(); }
+  });
+
+  document.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.onclick = ()=>editarJugador(btn.dataset.edit);
+  });
+
+  document.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const ok = await mostrarConfirmModal('¿Borrar jugador?', { titulo: 'Borrar jugador', textoOk: 'Borrar', peligroso: true });
+      if(!ok) return;
+      state.jugadores = state.jugadores.filter(j=>j.id!==btn.dataset.delete);
+      persist(); render();
+    };
+  });
+}
+
+function crearJugador(){
+  const nombre = document.getElementById('new-jug-nombre').value.trim();
+  if(!nombre){ toast('Ingresá un nombre'); return; }
+  const categoria = document.getElementById('new-jug-cat').value;
+  const genero = document.getElementById('new-jug-genero').value;
+  const lateralidad = document.getElementById('new-jug-lat').value;
+  state.jugadores = state.jugadores || [];
+  state.jugadores.push({
+    id: uid('j'), nombre, lateralidad, genero, categoria, foto:'', historial:[]
+  });
+  persist(); render();
+}
+
+function editarJugador(jId){
+  const j = state.jugadores.find(x=>x.id===jId);
+  if(!j) return;
+
+  const html = `
+    <div class="panel">
+      <h2>Editar Jugador
+        <button class="btn btn-outline btn-sm" id="btn-close-edit">Cerrar</button>
+      </h2>
+      <div class="grid-2">
+        <div>
+          <div class="field"><label>Nombre</label><input id="edit-nombre" value="${escapeHtml(j.nombre)}"></div>
+          <div class="field"><label>Categoría</label><select id="edit-cat">
+            ${CATEGORIAS.map(c=>`<option value="${c}" ${c===j.categoria?'selected':''}>${CATEGORIA_LABEL[c]}</option>`).join('')}
+          </select></div>
+          <div class="field"><label>Género</label><select id="edit-genero">
+            ${Object.entries(GENEROS).map(([k,v])=>`<option value="${k}" ${k===j.genero?'selected':''}>${v}</option>`).join('')}
+          </select></div>
+          <div class="field"><label>Lateralidad</label><select id="edit-lat">
+            ${Object.entries(LATERALIDADES).map(([k,v])=>`<option value="${k}" ${k===j.lateralidad?'selected':''}>${v}</option>`).join('')}
+          </select></div>
+        </div>
+        <div>
+          <label>Foto</label>
+          <div class="foto-preview" id="preview-foto" style="margin-bottom:10px;">
+            ${j.foto ? `<img src="${j.foto}" alt="">` : '📷 Sin foto'}
+          </div>
+          <input type="file" id="file-foto" class="file-input" accept="image/*">
+          <button class="btn btn-outline btn-block btn-sm" id="btn-upload-foto">Subir foto</button>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" id="btn-save-jugador">Guardar</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Historial de puntos</h2>
+      ${ (j.historial && j.historial.length) ? `
+        <div id="historial-list">
+          ${j.historial.slice().reverse().map(h=>{
+            const torneo = state.torneos.find(x=>x.id===h.torneoId);
+            let companero = h.companero;
+            if(companero === undefined){
+              const pareja = torneo ? (torneo.parejas[h.categoria] || []).find(p=>p.id===h.parejaId) : null;
+              companero = pareja ? (pareja.j1_id === j.id ? pareja.j2 : pareja.j1) : null;
+            }
+            return `
+              <div class="pareja-row">
+                <span class="nombre">${torneo ? escapeHtml(torneo.nombre) : 'Torneo eliminado'}
+                  <span style="color:var(--grey);font-size:0.78rem;font-weight:500;"> — ${getCategoriaLabel(state,h.categoria)} · ${POSICION_LABELS[h.posicion] || h.posicion || ''}${companero ? ` · con ${escapeHtml(companero)}` : ''}</span>
+                </span>
+                <span style="color:var(--lime);font-weight:800;flex-shrink:0;">+${h.puntos_ganados} pts</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      ` : '<div class="empty-state">Todavía no sumó puntos en ningún torneo.</div>' }
+    </div>
+  `;
+
+  const el = document.getElementById('section-jugadores');
+  el.innerHTML = html;
+
+  document.getElementById('btn-close-edit').onclick = ()=>render();
+  document.getElementById('btn-upload-foto').onclick = ()=>document.getElementById('file-foto').click();
+  
+  document.getElementById('file-foto').onchange = (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      j.foto = ev.target.result;
+      document.getElementById('preview-foto').innerHTML = `<img src="${j.foto}" alt="">`;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  document.getElementById('btn-save-jugador').onclick = ()=>{
+    j.nombre = document.getElementById('edit-nombre').value;
+    j.categoria = document.getElementById('edit-cat').value;
+    j.genero = document.getElementById('edit-genero').value;
+    j.lateralidad = document.getElementById('edit-lat').value;
+    persist(); render();
+  };
+}
+
+// ---- FUNCIONES UTILITARIAS ----
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// Se llama cuando llega un cambio real (por Supabase Realtime, o por el
+// chequeo de respaldo — ver suscribirseATorneo en shared.js). Si justo
+// estamos a mitad de un guardado propio (isSaving), lo ignoramos: cuando
+// termine ese guardado, persist() ya deja todo consistente por su cuenta.
+function aplicarNuevoStateAdmin(nuevoState){
+  if(isSaving) return;
+  state = nuevoState;
+  lastStateJson = JSON.stringify(nuevoState);
+  render();
+}
+
+// ---- INIT (datos del panel, se llama recién después de loguearse) ----
+async function initApp(){
+  try{
+    state = await loadState(supabase);
+    if(!state.jugadores) state.jugadores = [];
+    lastStateJson = JSON.stringify(state);
+    activeTorneoId = state.torneos[0]?.id || null;
+    render();
+    suscripcionTorneo = suscribirseATorneo(supabase, aplicarNuevoStateAdmin, { estadoInicial: state });
+  }catch(e){
+    console.error(e);
+    app.innerHTML = `<div class="panel"><div class="empty-state">Error conectando con la base de datos.</div></div>`;
+  }
+}
+
+// ---- AUTENTICACIÓN ----
+const loginScreen = document.getElementById('login-screen');
+const adminPanel = document.getElementById('admin-panel');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const loginBtn = document.getElementById('login-btn');
+
+let appStarted = false;
+
+function showLogin(){
+  loginScreen.style.display = 'flex';
+  adminPanel.style.display = 'none';
+}
+
+function showAdmin(){
+  loginScreen.style.display = 'none';
+  adminPanel.style.display = 'block';
+  if(!appStarted){
+    appStarted = true;
+    initApp();
+  }
+}
+
+// Un usuario sólo puede entrar al panel si su id figura en la tabla
+// "admins" (lista blanca que se carga a mano por SQL, ver setup.sql).
+// Esto es lo que evita que cualquier jugador que se creó una cuenta en
+// la web pública pueda entrar acá.
+async function esAdmin(userId){
+  const { data, error } = await supabase.from('admins').select('id').eq('id', userId).maybeSingle();
+  if(error){ console.error(error); return false; }
+  return !!data;
+}
+
+loginForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  loginError.textContent = '';
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Ingresando…';
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if(error){
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Ingresar';
+    loginError.textContent = 'Email o contraseña incorrectos.';
+    return;
+  }
+  if(!(await esAdmin(data.user.id))){
+    await supabase.auth.signOut();
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Ingresar';
+    loginError.textContent = 'Esta cuenta no tiene permisos de administrador.';
+    return;
+  }
+  loginBtn.disabled = false;
+  loginBtn.textContent = 'Ingresar';
+  showAdmin();
 });
+
+document.getElementById('btn-logout').onclick = async ()=>{
+  await supabase.auth.signOut();
+  location.reload();
+};
+
+supabase.auth.onAuthStateChange((event)=>{
+  if(event === 'SIGNED_OUT'){
+    showLogin();
+  }
+});
+
+(async function checkSession(){
+  const { data: { session } } = await supabase.auth.getSession();
+  if(session && await esAdmin(session.user.id)){
+    showAdmin();
+  }else{
+    if(session) await supabase.auth.signOut(); // sesión de jugador sin permisos, no de admin
+    showLogin();
+  }
+})();
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Pádel Miramar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0B; --card:#161616; --card-2:#1D1D1D; --line:#2A2A2A;
+    --lime:#D2F23A; --lime-dim:rgba(210,242,58,0.15);
+    --white:#F5F5F5; --grey:#9B9B9B; --red:#E5484D; --red-dim:rgba(229,72,77,0.15);
+    --font-display:'Montserrat',sans-serif; --font-body:'Inter',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{overflow-x:hidden;width:100%;}
+  body{overflow-x:hidden;width:100%;background:var(--bg);color:var(--white);font-family:var(--font-body);line-height:1.5;}
+  a{color:inherit;text-decoration:none;}
+  button, select, input{font-family:var(--font-body);}
+  input, select{
+    background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--white);
+    padding:10px 12px;font-size:0.9rem;outline:none;width:100%;
+  }
+  input:focus, select:focus{border-color:var(--lime);}
+  label{font-size:0.72rem;color:var(--grey);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;display:block;margin-bottom:6px;}
+
+  nav{
+    display:flex;align-items:center;justify-content:space-between;padding:14px 4vw;gap:10px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:10;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:900;font-size:0.88rem;}
+  @media(min-width:640px){ .brand{font-size:1.05rem;} }
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--lime);flex-shrink:0;}
+  .navlink{font-weight:700;font-size:0.76rem;color:var(--grey);border:1px solid var(--line);padding:8px 12px;border-radius:8px;white-space:nowrap;}
+  @media(min-width:640px){ .navlink{font-size:0.82rem;padding:9px 16px;} }
+  .navlink:hover{color:var(--white);border-color:var(--lime);}
+
+  .section-tabs{display:flex;gap:6px;padding:14px 4vw;border-bottom:1px solid var(--line);flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .section-tab{
+    font-weight:700;font-size:0.78rem;padding:9px 14px;border-radius:8px;background:var(--card-2);border:1px solid var(--line);
+    color:var(--grey);cursor:pointer;white-space:nowrap;flex-shrink:0;
+  }
+  @media(min-width:640px){ .section-tabs{padding:20px 4vw;gap:8px;} .section-tab{font-size:0.85rem;padding:10px 18px;} }
+  .section-tab.active{background:var(--lime);color:#0B0B0B;border-color:var(--lime);}
+
+  .layout{display:grid;grid-template-columns:1fr;gap:0;max-width:1800px;margin:0 auto;}
+  @media(min-width:900px){.layout{grid-template-columns:280px 1fr;}}
+  /* Los hijos de un grid no se achican por debajo del contenido más ancho
+     que tengan adentro (acá, la llave del torneo, que necesita 700px para
+     dibujarse) a menos que se les diga explícitamente min-width:0. Sin
+     esto, aunque la llave tenga su propio scroll interno (.bracket-wrap),
+     terminaba empujando el ancho de TODA la página en mobile. */
+  .layout > *{min-width:0;}
+
+  .sidebar{padding:26px 20px;border-right:1px solid var(--line);display:none;}
+  .sidebar.show{display:block;}
+  .sidebar h3{font-family:var(--font-display);font-size:0.85rem;letter-spacing:0.06em;color:var(--grey);margin-bottom:16px;}
+  .torneo-item{
+    padding:13px 14px;border-radius:10px;border:1px solid var(--line);margin-bottom:8px;cursor:pointer;
+    font-size:0.88rem;font-weight:600;transition:all .15s;
+  }
+  .torneo-item:hover{border-color:var(--lime);}
+  .torneo-item.active{background:var(--lime-dim);border-color:var(--lime);color:var(--lime);}
+  .torneo-item small{display:block;color:var(--grey);font-weight:500;font-size:0.74rem;margin-top:2px;}
+  .torneo-item.active small{color:var(--lime);opacity:0.75;}
+
+  .btn{
+    font-weight:700;font-size:0.85rem;padding:12px 18px;border-radius:9px;border:none;cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;transition:transform .15s;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:var(--lime);color:#0B0B0B;}
+  .btn-outline{background:transparent;color:var(--white);border:1.5px solid var(--line);}
+  .btn-outline:hover{border-color:var(--lime);}
+  .btn-danger{background:var(--red-dim);color:var(--red);}
+  .btn-block{width:100%;justify-content:center;}
+  .btn-sm{padding:8px 12px;font-size:0.78rem;}
+
+  .main{padding:18px 4vw 50px;}
+  @media(min-width:640px){ .main{padding:26px 4vw 60px;} }
+  .section{display:none;}
+  .section.active{display:block;}
+  
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px;}
+  @media(min-width:640px){ .panel{border-radius:16px;padding:26px;margin-bottom:22px;} }
+  .panel h2{font-family:var(--font-display);font-weight:800;font-size:1rem;margin-bottom:16px;display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;}
+  @media(min-width:640px){ .panel h2{font-size:1.15rem;margin-bottom:18px;} }
+  .grid-2{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media(min-width:640px){.grid-2{grid-template-columns:1fr 1fr;}}
+  .grid-3{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media(min-width:760px){.grid-3{grid-template-columns:1fr 1fr 1fr;}}
+  /* Mismo motivo que .layout > *: sin esto, cualquier cosa angosta-pero-con-
+     contenido-ancho adentro de una de estas grillas (como el panel de
+     "Parejas y llave") vuelve a empujar el ancho de toda la página. */
+  .grid-2 > *, .grid-3 > *{min-width:0;}
+  .field{margin-bottom:0;}
+
+  .check-pill{
+    padding:9px 16px;border-radius:8px;border:1px solid var(--line);font-size:0.82rem;font-weight:700;cursor:pointer;color:var(--grey);
+  }
+  .check-pill.active{background:var(--lime);color:#0B0B0B;border-color:var(--lime);}
+
+  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+  .tab{padding:9px 18px;border-radius:8px;background:var(--card-2);border:1px solid var(--line);color:var(--grey);font-weight:700;font-size:0.82rem;cursor:pointer;}
+  .tab.active{background:var(--lime);color:#0B0B0B;border-color:var(--lime);}
+
+  .pareja-row, .jugador-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    padding:11px 14px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;
+  }
+  .pareja-row .nombre, .jugador-row .nombre{font-size:0.88rem;font-weight:600;min-width:0;word-break:break-word;}
+  .pareja-row > div, .jugador-row > div{min-width:0;}
+  .pareja-row .x, .jugador-row .x{cursor:pointer;color:var(--red);width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .pareja-row .x:hover, .jugador-row .x:hover{background:var(--red-dim);}
+  
+  .foto-preview{width:60px;height:60px;border-radius:8px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+  .foto-preview img{width:100%;height:100%;object-fit:cover;}
+  .foto-preview.empty{color:var(--grey);font-size:0.7rem;}
+
+  .add-pareja-form, .add-jugador-form{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .add-pareja-form input, .add-jugador-form input, .add-jugador-form select{flex:1;min-width:140px;}
+
+  .empty-state{color:var(--grey);font-size:0.88rem;text-align:center;padding:30px 10px;}
+
+  /* La llave mantiene su tamaño natural (nada de achicarla con scale) y usa
+     scroll horizontal propio cuando no entra — así el texto y los botones
+     siguen siendo cómodos de leer/tocar en el celular, en vez de quedar
+     diminutos. */
+  .bracket-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-top:6px;}
+  .bracket{display:flex;gap:36px;min-width:760px;}
+  .round{display:flex;flex-direction:column;justify-content:space-around;gap:16px;flex:1;min-width:220px;}
+  .round-label{text-align:center;font-size:0.72rem;font-weight:700;color:var(--grey);letter-spacing:0.08em;margin-bottom:4px;}
+  .match{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:0.88rem;}
+  .match .side{display:flex;align-items:center;justify-content:space-between;padding:7px 4px;gap:8px;}
+  .match .side.winner{color:var(--lime);font-weight:700;}
+  .match .side.bye{color:var(--grey);font-style:italic;}
+  .match .side.tbd{color:var(--grey);}
+  .win-btn{
+    font-size:0.76rem;font-weight:700;padding:7px 12px;border-radius:6px;border:1px solid var(--lime);
+    background:var(--lime-dim);color:var(--lime);cursor:pointer;flex-shrink:0;
+  }
+  .win-btn:hover{background:var(--lime);color:#0B0B0B;}
+  .decided-tag{font-size:0.68rem;color:var(--lime);}
+
+  .toast{
+    position:fixed;bottom:20px;right:20px;background:var(--card-2);border:1px solid var(--lime);color:var(--lime);
+    padding:12px 18px;border-radius:10px;font-size:0.85rem;font-weight:600;opacity:0;transform:translateY(10px);
+    transition:all .25s;pointer-events:none;z-index:100;
+  }
+  .toast.show{opacity:1;transform:translateY(0);}
+  .loading{padding:60px;text-align:center;color:var(--grey);}
+
+  /* ---- Modal propio (reemplaza a prompt()/confirm() del navegador) ---- */
+  .app-modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(3px);z-index:1000;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .app-modal-overlay.open{display:flex;}
+  .app-modal-box{
+    background:linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);border:1px solid var(--line);
+    border-radius:16px;padding:24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.6);
+    overflow:hidden;
+  }
+  .app-modal-title{font-family:var(--font-display);font-weight:800;font-size:1.02rem;margin-bottom:10px;}
+  .app-modal-body{font-size:0.88rem;color:var(--grey);line-height:1.6;margin-bottom:18px;white-space:pre-line;}
+  .app-modal-box .field{margin-bottom:18px;}
+  .app-modal-actions{display:flex;flex-direction:column;gap:10px;width:100%;}
+  .app-modal-actions .btn{width:100%;min-width:0;box-sizing:border-box;justify-content:center;}
+
+  .file-input{display:none;}
+
+  /* ---- Login ---- */
+  .login-wrap{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .login-card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px 26px;
+    width:100%;max-width:360px;
+  }
+  .login-brand{
+    display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:900;
+    font-size:0.95rem;margin-bottom:26px;
+  }
+  .login-brand .dot{width:10px;height:10px;border-radius:50%;background:var(--lime);flex-shrink:0;}
+  .login-card .field{margin-bottom:14px;}
+  .login-error{
+    color:var(--red);font-size:0.8rem;font-weight:600;min-height:18px;margin-bottom:6px;
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-wrap">
+  <form id="login-form" class="login-card">
+    <div class="login-brand"><span class="dot"></span>PÁDEL MIRAMAR · ADMIN</div>
+    <div class="field">
+      <label>Email</label>
+      <input id="login-email" type="email" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input id="login-password" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button type="submit" class="btn btn-primary btn-block" id="login-btn">Ingresar</button>
+  </form>
+</div>
+
+<div id="admin-panel" style="display:none;">
+  <nav>
+    <div class="brand"><span class="dot"></span>PÁDEL MIRAMAR · ADMIN</div>
+    <div style="display:flex;gap:10px;">
+      <a class="navlink" href="index.html">Ver sitio público →</a>
+      <button class="navlink" id="btn-logout" style="cursor:pointer;">Cerrar sesión</button>
+    </div>
+  </nav>
+
+  <div class="section-tabs">
+    <button class="section-tab active" data-section="torneos">Torneos & Llave</button>
+    <button class="section-tab" data-section="partidos">Partidos</button>
+    <button class="section-tab" data-section="jugadores">Jugadores</button>
+    <button class="section-tab" data-section="config">Configuración</button>
+  </div>
+
+  <div id="app" class="loading">Cargando datos…</div>
+  <div class="toast" id="toast">Guardado ✓</div>
+</div>
+
+<!-- Modal genérico: reemplaza a confirm()/prompt() del navegador por un
+     cartel con el mismo estilo del resto del panel. Se arma y controla
+     desde JS (ver mostrarConfirmModal / mostrarPromptModal). -->
+<div class="app-modal-overlay" id="app-modal">
+  <div class="app-modal-box">
+    <div class="app-modal-title" id="app-modal-title"></div>
+    <div class="app-modal-body" id="app-modal-body"></div>
+    <div class="field" id="app-modal-input-wrap" style="display:none;">
+      <input type="text" id="app-modal-input">
+    </div>
+    <div class="app-modal-actions">
+      <button type="button" class="btn btn-primary" id="app-modal-ok">Confirmar</button>
+      <button type="button" class="btn btn-outline" id="app-modal-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL, LATERALIDADES, GENEROS,
+  TORNEO_GENEROS, getTorneoGeneroLabel, resolverGenerosPareja,
+  uid, generateBracket, propagateWinner, roundLabel, loadState, saveState, isAprobada,
+  resolverJugadorId, registrarResultadoPartido, getPuntosConfig, DEFAULT_PUNTOS_CONFIG, POSICION_LABELS,
+  isCategoriaSuma, getAllCategorias, getCategoriaLabel, getCategoriasSumaConfig,
+  RONDA_LABELS, RONDA_OPCIONES, getRondaLabel, getCupoInfo, suscribirseATorneo,
+  dispararNotificacion, authIdsDeJugadorIds, authIdsElegiblesParaTorneo
+} from './shared.js?v=19';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const app = document.getElementById('app');
+const toastEl = document.getElementById('toast');
+
+let state = null;
+let activeTorneoId = null;
+let activeTab = {};
+let currentSection = 'torneos';
+let partidosTorneoId = null;
+let jugadoresSearchQuery = '';
+let lastStateJson = '';
+let isSaving = false;
+let suscripcionTorneo = null; // ver initApp() — objeto que devuelve suscribirseATorneo (shared.js)
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'), 1800);
+}
+
+// ============================================================
+// Modal genérico (reemplaza a confirm()/prompt() del navegador)
+// ============================================================
+// Los cartelitos nativos del navegador (confirm/prompt) no se pueden
+// estilizar y desentonan con el resto del panel. Estas dos funciones abren
+// el mismo modal (#app-modal) pero con el diseño del sitio, y devuelven una
+// promesa — se usan con "await" en vez de llamar a confirm()/prompt()
+// directamente, tal cual quedaban antes.
+function _appModalBase({ titulo, mensaje, conInput, placeholder, valorInicial, textoOk, textoCancel, peligroso }){
+  return new Promise((resolve)=>{
+    const overlay = document.getElementById('app-modal');
+    const inputWrap = document.getElementById('app-modal-input-wrap');
+    const input = document.getElementById('app-modal-input');
+    const btnOk = document.getElementById('app-modal-ok');
+    const btnCancel = document.getElementById('app-modal-cancel');
+
+    document.getElementById('app-modal-title').textContent = titulo || '';
+    document.getElementById('app-modal-body').textContent = mensaje || '';
+    document.getElementById('app-modal-body').style.display = mensaje ? 'block' : 'none';
+
+    inputWrap.style.display = conInput ? 'block' : 'none';
+    input.value = valorInicial || '';
+    input.placeholder = placeholder || '';
+
+    btnOk.textContent = textoOk || (conInput ? 'Crear' : 'Confirmar');
+    btnOk.className = 'btn ' + (peligroso ? 'btn-danger' : 'btn-primary');
+    btnCancel.textContent = textoCancel || 'Cancelar';
+
+    function cerrar(valor){
+      overlay.classList.remove('open');
+      btnOk.onclick = null; btnCancel.onclick = null;
+      overlay.onclick = null;
+      document.removeEventListener('keydown', onKeyDown);
+      resolve(valor);
+    }
+    function onKeyDown(e){
+      if(e.key === 'Escape') cerrar(conInput ? null : false);
+      if(e.key === 'Enter' && conInput) cerrar(input.value.trim());
+    }
+
+    btnOk.onclick = ()=> cerrar(conInput ? input.value.trim() : true);
+    btnCancel.onclick = ()=> cerrar(conInput ? null : false);
+    overlay.onclick = (e)=>{ if(e.target === overlay) cerrar(conInput ? null : false); };
+    document.addEventListener('keydown', onKeyDown);
+
+    overlay.classList.add('open');
+    if(conInput) setTimeout(()=> input.focus(), 50);
+  });
+}
+
+// Reemplazo de confirm(mensaje) — devuelve true/false.
+function mostrarConfirmModal(mensaje, { titulo = 'Confirmar', textoOk, peligroso = false } = {}){
+  return _appModalBase({ titulo, mensaje, conInput: false, textoOk, peligroso });
+}
+
+// Reemplazo de prompt(mensaje) — devuelve el texto ingresado, o null si se
+// canceló (igual que prompt() nativo).
+function mostrarPromptModal(titulo, { placeholder = '', valorInicial = '', textoOk = 'Crear' } = {}){
+  return _appModalBase({ titulo, conInput: true, placeholder, valorInicial, textoOk });
+}
+
+// Dispara una notificación push sin bloquear ni romper el resto del flujo:
+// si falla (por ejemplo, la Edge Function todavía no está desplegada, o el
+// jugador nunca activó las notificaciones), solo lo dejamos en consola — el
+// guardado de los datos ya se hizo antes de llamar a esta función.
+function avisarPush(authIds, titulo, cuerpo, url){
+  if(!authIds || authIds.length === 0) return;
+  dispararNotificacion(supabase, { authIds, titulo, cuerpo, url: url || './index.html' })
+    .catch(err => console.error('No se pudo enviar la notificación push:', err));
+}
+
+async function persist(){
+  isSaving = true;
+  try{
+    await saveState(supabase, state);
+    lastStateJson = JSON.stringify(state);
+    // Le avisamos a la suscripción que este guardado es "propio": Supabase
+    // también nos manda a nosotros el aviso en tiempo real de nuestro propio
+    // cambio (el "eco"), y sin esto se dispararía un re-render de más apenas
+    // llegue, aunque ya lo tengamos en pantalla.
+    if(suscripcionTorneo) suscripcionTorneo.marcarComoPropio(state);
+    toast('Guardado ✓');
+  }catch(e){
+    console.error(e);
+    toast('Error al guardar');
+  }finally{
+    isSaving = false;
+  }
+}
+
+function activeTorneo(){
+  return state.torneos.find(t=>t.id===activeTorneoId) || null;
+}
+
+// ---- RENDER GENERAL ----
+function render(){
+  const html = `
+    <div class="layout">
+      ${currentSection==='torneos' ? `<div class="sidebar show">
+        <h3>TORNEOS</h3>
+        <div id="torneo-list"></div>
+        <button class="btn btn-outline btn-block" id="btn-nuevo-torneo" style="margin-top:10px;">+ Nuevo torneo</button>
+      </div>` : '<div></div>'}
+      <div class="main">
+        <div id="section-torneos" class="section ${currentSection==='torneos'?'active':''}"></div>
+        <div id="section-partidos" class="section ${currentSection==='partidos'?'active':''}"></div>
+        <div id="section-jugadores" class="section ${currentSection==='jugadores'?'active':''}"></div>
+        <div id="section-config" class="section ${currentSection==='config'?'active':''}"></div>
+      </div>
+    </div>
+  `;
+  app.innerHTML = html;
+
+  // Botones de sección
+  document.querySelectorAll('.section-tab').forEach(btn=>{
+    btn.onclick = ()=>{
+      document.querySelectorAll('.section-tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentSection = btn.dataset.section;
+      render();
+    };
+  });
+
+  if(currentSection==='torneos'){
+    renderTorneosSection();
+  } else if(currentSection==='partidos'){
+    renderPartidosSection();
+  } else if(currentSection==='jugadores'){
+    renderJugadoresSection();
+  } else {
+    renderConfigSection();
+  }
+}
+
+// ---- SECCIÓN TORNEOS ----
+function renderTorneosSection(){
+  const t = activeTorneo();
+  const el = document.getElementById('section-torneos');
+  
+  // Lista de torneos
+  const list = document.getElementById('torneo-list');
+  if(list){
+    list.innerHTML = '';
+    state.torneos.forEach(tr=>{
+      const div = document.createElement('div');
+      div.className = 'torneo-item' + (tr.id===activeTorneoId ? ' active' : '');
+      const totalParejas = Object.values(tr.parejas).reduce((a,arr)=>a+arr.length,0);
+      const generoTxt = tr.genero ? TORNEO_GENEROS[tr.genero] : 'sin género';
+      div.innerHTML = `${tr.nombre}<small>${tr.fecha} · ${totalParejas} parejas · ${generoTxt} ${tr.inscripcionAbierta ? '· <span style="color:var(--lime);">insc. abierta</span>' : '· <span style="color:var(--red);">insc. cerrada</span>'}</small>`;
+      div.onclick = ()=>{ activeTorneoId = tr.id; render(); };
+      list.appendChild(div);
+    });
+    document.getElementById('btn-nuevo-torneo').onclick = crearTorneo;
+  }
+
+  if(!t){
+    el.innerHTML = '<div class="panel"><div class="empty-state">Elegí un torneo o creá uno nuevo.</div></div>';
+    return;
+  }
+
+  el.innerHTML = renderTorneoPanel(t);
+  wireTorneoPanel(t);
+}
+
+function renderTorneoPanel(t){
+  const cupoInfo = getCupoInfo(t);
+  return `
+    <div class="panel">
+      <h2>Datos del torneo
+        <button class="btn btn-danger btn-sm" id="btn-borrar-torneo">Eliminar</button>
+      </h2>
+      <div class="grid-3">
+        <div class="field"><label>Nombre</label><input id="f-nombre" value="${escapeHtml(t.nombre)}"></div>
+        <div class="field"><label>Fecha</label><input id="f-fecha" value="${escapeHtml(t.fecha)}"></div>
+        <div class="field"><label>Lugar</label><input id="f-lugar" value="${escapeHtml(t.lugar)}"></div>
+      </div>
+      <label style="margin-top:14px;">Categorías</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${getAllCategorias(state).map(c=>`<div class="check-pill ${t.categorias.includes(c)?'active':''}" data-cat="${c}">${getCategoriaLabel(state,c)}</div>`).join('')}
+      </div>
+      <div style="color:var(--grey);font-size:0.72rem;margin-top:6px;">Las categorías "Suma" (Suma 11, Suma 14, etc.) se crean y administran desde la pestaña Configuración.</div>
+      <label style="margin-top:14px;">Cupo máximo de parejas</label>
+      <div class="field" style="max-width:220px;">
+        <input type="number" id="f-cupo" min="1" step="1" placeholder="Sin límite" value="${t.cupo || ''}">
+      </div>
+      <div style="color:var(--grey);font-size:0.78rem;margin-top:6px;">
+        ${cupoInfo
+          ? `${cupoInfo.ocupadas} de ${cupoInfo.cupo} parejas aprobadas (sumando todas las categorías de este torneo).${cupoInfo.lleno ? ' <b style="color:var(--red);">Cupo completo — no se puede inscribir nadie más hasta que se libere un lugar.</b>' : ''}`
+          : 'Dejalo vacío para no limitar la cantidad de parejas. Cuenta sólo las parejas ya aprobadas, sin importar en qué categoría jueguen.'}
+      </div>
+      <label style="margin-top:14px;">Género del torneo</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${Object.entries(TORNEO_GENEROS).map(([k,v])=>`<div class="check-pill ${t.genero===k?'active':''}" data-genero="${k}">${v}</div>`).join('')}
+      </div>
+      <div style="color:var(--grey);font-size:0.78rem;margin-top:8px;">
+        ${t.genero==='mixto'
+          ? 'Cada pareja tiene que tener un jugador y una jugadora.'
+          : t.genero
+            ? `Solo se van a poder anotar jugadores de género ${TORNEO_GENEROS[t.genero].toLowerCase()}.`
+            : '<span style="color:var(--red);">Sin género configurado — elegí uno para poder controlar quién se inscribe.</span>'}
+      </div>
+      <label style="margin-top:14px;">Inscripciones</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="check-pill ${t.inscripcionAbierta ? 'active' : ''}" id="btn-insc-abierta">Abiertas</div>
+        <div class="check-pill ${!t.inscripcionAbierta ? 'active' : ''}" id="btn-insc-cerrada" style="${!t.inscripcionAbierta ? 'background:var(--red);color:#fff;border-color:var(--red);' : ''}">Cerradas</div>
+      </div>
+      <div style="color:var(--grey);font-size:0.78rem;margin-top:8px;">
+        ${t.inscripcionAbierta ? 'Las parejas van a poder inscribirse a este torneo desde la web pública.' : 'Este torneo no va a aparecer para inscribirse en la web pública.'}
+      </div>
+    </div>
+    ${renderPostulacionesPanel(t)}
+    <div class="panel">
+      <h2>Parejas y llave</h2>
+      ${t.categorias.length===0 ? '<div class="empty-state">Elegí al menos una categoría.</div>' : `
+        <div class="tabs" id="cat-tabs">
+          ${t.categorias.map(c=>`<div class="tab ${ (activeTab[t.id]||t.categorias[0])===c ? 'active':''}" data-cat="${c}">${getCategoriaLabel(state,c)}</div>`).join('')}
+        </div>
+        <div id="cat-content"></div>
+      `}
+    </div>
+  `;
+}
+
+function wireTorneoPanel(t){
+  document.getElementById('f-nombre').addEventListener('change', e=>{ t.nombre=e.target.value; persist(); render(); });
+  document.getElementById('f-fecha').addEventListener('change', e=>{ t.fecha=e.target.value; persist(); });
+  document.getElementById('f-lugar').addEventListener('change', e=>{ t.lugar=e.target.value; persist(); });
+  document.getElementById('f-cupo').addEventListener('change', e=>{
+    const val = parseInt(e.target.value, 10);
+    t.cupo = (val && val > 0) ? val : null;
+    persist(); render();
+  });
+
+  document.getElementById('btn-borrar-torneo').onclick = async ()=>{
+    const ok = await mostrarConfirmModal(
+      `¿Eliminar "${t.nombre}"?\n\nLos puntos de ranking y los partidos ganados/perdidos de los jugadores que ya jugaron en este torneo NO se pierden. Solo se borra el torneo (llave, parejas, partidos programados).`,
+      { titulo: 'Eliminar torneo', textoOk: 'Eliminar', peligroso: true }
+    );
+    if(!ok) return;
+    state.torneos = state.torneos.filter(x=>x.id!==t.id);
+    activeTorneoId = state.torneos[0]?.id || null;
+    persist(); render();
+  };
+
+  document.getElementById('btn-insc-abierta').onclick = ()=>{
+    const estabaCerrada = !t.inscripcionAbierta;
+    t.inscripcionAbierta = true; persist(); render();
+    // Avisamos "se abrió tu categoría" solo en la transición de cerrada a
+    // abierta (si ya estaba abierta y tocás el botón de nuevo, no se manda
+    // otra vez), y solo si ya se configuraron categorías.
+    if(estabaCerrada && t.categorias.length > 0){
+      avisarPush(
+        authIdsElegiblesParaTorneo(state, t),
+        '¡Nuevo torneo en tu categoría!',
+        `Se abrió la inscripción de "${t.nombre}". Anotate desde la web.`
+      );
+    }
+  };
+  document.getElementById('btn-insc-cerrada').onclick = ()=>{
+    t.inscripcionAbierta = false; persist(); render();
+  };
+
+  document.querySelectorAll('.check-pill[data-genero]').forEach(el=>{
+    el.onclick = async ()=>{
+      const nuevoGenero = el.dataset.genero;
+      if(nuevoGenero === t.genero) return;
+      const hayParejas = Object.values(t.parejas||{}).some(arr=>(arr||[]).length>0);
+      if(hayParejas && !(await mostrarConfirmModal('Ya hay parejas cargadas en este torneo. Cambiar el género no las va a validar retroactivamente ¿Continuar?', { titulo: 'Cambiar género' }))) return;
+      t.genero = nuevoGenero;
+      persist(); render();
+    };
+  });
+
+  document.querySelectorAll('.check-pill[data-cat]').forEach(el=>{
+    el.onclick = async ()=>{
+      const cat = el.dataset.cat;
+      if(t.categorias.includes(cat)){
+        if(!(await mostrarConfirmModal(`¿Quitar ${getCategoriaLabel(state,cat)}?`, { titulo: 'Quitar categoría', peligroso: true }))) return;
+        t.categorias = t.categorias.filter(c=>c!==cat);
+        delete t.parejas[cat]; delete t.brackets[cat];
+      } else {
+        t.categorias.push(cat);
+        t.parejas[cat] = []; t.brackets[cat] = null;
+      }
+      persist(); render();
+    };
+  });
+
+  wirePostulacionesPanel(t);
+
+  if(t.categorias.length>0){
+    const currentCat = activeTab[t.id] || t.categorias[0];
+    activeTab[t.id] = currentCat;
+    document.getElementById('cat-content').innerHTML = renderCategoriaContent(t, currentCat);
+    wireCategoriaContent(t, currentCat);
+
+    document.querySelectorAll('#cat-tabs .tab').forEach(el=>{
+      el.onclick = ()=>{ activeTab[t.id]=el.dataset.cat; render(); };
+    });
+  }
+}
+
+function categoriaRealJugador(jId){
+  const j = (state.jugadores||[]).find(x=>x.id===jId);
+  return j ? j.categoria : null;
+}
+
+function renderPostulacionesPanel(t){
+  // Recorremos TODAS las categorías del torneo, no solo la primera
+  const pendientes = [];
+  (t.categorias||[]).forEach(cat=>{
+    (t.parejas[cat]||[]).forEach(p=>{
+      if(p.estado==='pendiente') pendientes.push({...p, _cat: cat});
+    });
+  });
+
+  return `
+    <div class="panel">
+      <h2>Postulaciones pendientes ${pendientes.length ? `<span style="background:var(--red-dim);color:var(--red);font-size:0.7rem;font-weight:800;padding:5px 11px;border-radius:6px;">${pendientes.length}</span>` : ''}</h2>
+      ${pendientes.length===0 ? '<div class="empty-state">No hay postulaciones.</div>' :
+        pendientes.map(p=>{
+          const cat = p._cat;
+          const esSuma = isCategoriaSuma(cat);
+          let discrepanciaHtml = '';
+          if(esSuma && (p.cat_j1 || p.cat_j2)){
+            const realJ1 = categoriaRealJugador(p.j1_id);
+            const realJ2 = categoriaRealJugador(p.j2_id);
+            const mismatchJ1 = realJ1 && p.cat_j1 && realJ1 !== p.cat_j1;
+            const mismatchJ2 = realJ2 && p.cat_j2 && realJ2 !== p.cat_j2;
+            discrepanciaHtml = `
+              <div style="display:flex;gap:22px;flex-wrap:wrap;font-size:0.78rem;color:var(--grey);margin-top:4px;">
+                <span>${escapeHtml(p.j1)}: declaró <b style="color:var(--white);">${p.cat_j1?getCategoriaLabel(state,p.cat_j1):'—'}</b>
+                  ${mismatchJ1 ? ` <span style="color:var(--red);font-weight:700;">⚠ en la base figura ${getCategoriaLabel(state,realJ1)}</span>` : ''}
+                </span>
+                <span>${escapeHtml(p.j2)}: declaró <b style="color:var(--white);">${p.cat_j2?getCategoriaLabel(state,p.cat_j2):'—'}</b>
+                  ${mismatchJ2 ? ` <span style="color:var(--red);font-weight:700;">⚠ en la base figura ${getCategoriaLabel(state,realJ2)}</span>` : ''}
+                </span>
+              </div>
+            `;
+          } else if(!esSuma){
+            // Categoría normal (no Suma): comparamos la categoría del torneo al
+            // que se anotaron contra la categoría real que cada jugador tiene
+            // cargada en la base de jugadores.
+            const realJ1 = categoriaRealJugador(p.j1_id);
+            const realJ2 = categoriaRealJugador(p.j2_id);
+            const mismatchJ1 = realJ1 && realJ1 !== cat;
+            const mismatchJ2 = realJ2 && realJ2 !== cat;
+            if(mismatchJ1 || mismatchJ2){
+              discrepanciaHtml = `
+                <div style="display:flex;gap:22px;flex-wrap:wrap;font-size:0.78rem;color:var(--grey);margin-top:4px;">
+                  ${mismatchJ1 ? `<span>${escapeHtml(p.j1)}: <span style="color:var(--red);font-weight:700;">⚠ en la base figura ${getCategoriaLabel(state,realJ1)}, se anotó en ${getCategoriaLabel(state,cat)}</span></span>` : ''}
+                  ${mismatchJ2 ? `<span>${escapeHtml(p.j2)}: <span style="color:var(--red);font-weight:700;">⚠ en la base figura ${getCategoriaLabel(state,realJ2)}, se anotó en ${getCategoriaLabel(state,cat)}</span></span>` : ''}
+                </div>
+              `;
+            }
+          }
+          return `
+            <div class="pareja-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}<span style="color:var(--grey);font-size:0.78rem;"> — ${getCategoriaLabel(state,cat)}</span></span>
+                <span style="display:flex;gap:6px;">
+                  <button class="btn btn-primary btn-sm" data-aprobar="${cat}:${p.id}">Aprobar</button>
+                  <button class="btn btn-danger btn-sm" data-rechazar="${cat}:${p.id}">Rechazar</button>
+                </span>
+              </div>
+              ${discrepanciaHtml}
+            </div>
+          `;
+        }).join('')
+      }
+    </div>
+  `;
+}
+
+function wirePostulacionesPanel(t){
+  document.querySelectorAll('[data-aprobar]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const [cat, id] = btn.dataset.aprobar.split(':');
+      const p = (t.parejas[cat]||[]).find(x=>x.id===id);
+      if(!p) return;
+      const cupoInfo = getCupoInfo(t);
+      if(cupoInfo && cupoInfo.lleno){
+        const ok = await mostrarConfirmModal(`Este torneo ya llegó a su cupo de ${cupoInfo.cupo} parejas. ¿Aprobar igual?`, { titulo: 'Cupo completo' });
+        if(!ok) return;
+      }
+      p.estado = 'aprobada'; persist(); render();
+      avisarPush(
+        authIdsDeJugadorIds(state, [p.j1_id, p.j2_id]),
+        '¡Pareja aprobada!',
+        `Tu pareja para ${getCategoriaLabel(state,cat)} en "${t.nombre}" fue aprobada.`
+      );
+    };
+  });
+  document.querySelectorAll('[data-rechazar]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const [cat, id] = btn.dataset.rechazar.split(':');
+      const ok = await mostrarConfirmModal('¿Rechazar?', { titulo: 'Rechazar postulación', textoOk: 'Rechazar', peligroso: true });
+      if(!ok) return;
+      const p = (t.parejas[cat]||[]).find(x=>x.id===id);
+      t.parejas[cat] = (t.parejas[cat]||[]).filter(x=>x.id!==id);
+      persist(); render();
+      if(p){
+        avisarPush(
+          authIdsDeJugadorIds(state, [p.j1_id, p.j2_id]),
+          'Postulación rechazada',
+          `Tu postulación para ${getCategoriaLabel(state,cat)} en "${t.nombre}" fue rechazada.`
+        );
+      }
+    };
+  });
+}
+
+function renderCategoriaContent(t, cat){
+  const parejas = (t.parejas[cat] || []).filter(isAprobada);
+  const bracket = t.brackets[cat];
+  const esSuma = isCategoriaSuma(cat);
+  return `
+    <div class="grid-2" style="align-items:start;">
+      <div>
+        <label>Parejas (${parejas.length})</label>
+        <div id="parejas-list">
+          ${parejas.length===0 ? '<div class="empty-state">Sin parejas.</div>' :
+            parejas.map(p=>`
+              <div class="pareja-row">
+                <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}
+                  ${esSuma && (p.cat_j1||p.cat_j2) ? `<span style="display:block;color:var(--grey);font-weight:500;font-size:0.74rem;">${p.cat_j1?getCategoriaLabel(state,p.cat_j1):'?'} + ${p.cat_j2?getCategoriaLabel(state,p.cat_j2):'?'}</span>` : ''}
+                </span>
+                <span class="x" data-remove="${p.id}">✕</span>
+              </div>
+            `).join('')
+          }
+        </div>
+        <div class="add-pareja-form">
+          <input id="new-j1" placeholder="Jugador 1" list="jugadores-datalist" autocomplete="off">
+          <input id="new-j2" placeholder="Jugador 2" list="jugadores-datalist" autocomplete="off">
+          ${esSuma ? `
+            <select id="new-j1-cat" title="Categoría de Jugador 1">${CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('')}</select>
+            <select id="new-j2-cat" title="Categoría de Jugador 2">${CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('')}</select>
+          ` : ''}
+          ${t.genero==='mixto' ? `
+            <select id="new-j1-genero" title="Género de Jugador 1">
+              <option value="masculino">Jugador 1: Masculino</option>
+              <option value="femenino">Jugador 1: Femenino</option>
+            </select>
+            <select id="new-j2-genero" title="Género de Jugador 2">
+              <option value="femenino">Jugador 2: Femenino</option>
+              <option value="masculino">Jugador 2: Masculino</option>
+            </select>
+          ` : ''}
+          <button class="btn btn-primary btn-sm" id="btn-add-pareja">+ Agregar</button>
+        </div>
+        <datalist id="jugadores-datalist">
+          ${(state.jugadores || []).map(j=>`<option value="${escapeHtml(j.nombre)}"></option>`).join('')}
+        </datalist>
+        <div style="color:var(--grey);font-size:0.72rem;margin-top:4px;">Si el jugador ya está registrado, empezá a escribir su nombre y elegilo de la lista para no duplicarlo.${esSuma ? ' Elegí también la categoría individual de cada jugador.' : ''}${t.genero==='mixto' ? ' Elegí también el género de cada jugador (uno tiene que ser Masculino y el otro Femenino).' : t.genero ? ` Este torneo es ${TORNEO_GENEROS[t.genero].toLowerCase()}: los dos jugadores tienen que ser de ese género.` : ''}</div>
+        <button class="btn btn-outline btn-block" id="btn-generar-llave" style="margin-top:16px;" ${parejas.length<2?'disabled':''}>
+          ${bracket ? 'Regenerar llave' : 'Generar llave'}
+        </button>
+      </div>
+      <div>
+        <label>Llave — ${getCategoriaLabel(state,cat)}</label>
+        ${ bracket
+            ? '<div class="bracket-wrap"><div class="bracket" id="bracket-view"></div></div>'
+            : (parejas.length === 0
+                ? '<div class="empty-state">Todavía no hay parejas cargadas.</div>'
+                : `
+                  <div style="color:var(--grey);font-size:0.78rem;margin-bottom:10px;">Zona de grupos — parejas cargadas, esperando a que se genere la llave:</div>
+                  ${parejas.map(p=>`<div class="pareja-row"><span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}</span></div>`).join('')}
+                `)
+          }
+      </div>
+    </div>
+  `;
+}
+
+function wireCategoriaContent(t, cat){
+  document.querySelectorAll('[data-remove]').forEach(el=>{
+    el.onclick = ()=>{
+      t.parejas[cat] = t.parejas[cat].filter(p=>p.id!==el.dataset.remove);
+      persist(); render();
+    };
+  });
+
+  document.getElementById('btn-add-pareja').onclick = ()=>{
+    const j1 = document.getElementById('new-j1').value.trim();
+    const j2 = document.getElementById('new-j2').value.trim();
+    if(!j1 || !j2){ toast('Completá los nombres'); return; }
+    const esSuma = isCategoriaSuma(cat);
+    const catJ1El = document.getElementById('new-j1-cat');
+    const catJ2El = document.getElementById('new-j2-cat');
+    const cat_j1 = esSuma ? catJ1El.value : null;
+    const cat_j2 = esSuma ? catJ2El.value : null;
+
+    const generoJ1El = document.getElementById('new-j1-genero');
+    const generoJ2El = document.getElementById('new-j2-genero');
+    const { generoJ1, generoJ2, error: errorGenero } = resolverGenerosPareja(
+      t.genero, generoJ1El ? generoJ1El.value : null, generoJ2El ? generoJ2El.value : null
+    );
+    if(errorGenero){ toast(errorGenero); return; }
+
+    // Para Suma, cada jugador se resuelve con su propia categoría (no con la del torneo)
+    const r1 = resolverJugadorId(state, j1, esSuma ? cat_j1 : cat, generoJ1);
+    if(r1.error){ toast(r1.error); return; }
+    const r2 = resolverJugadorId(state, j2, esSuma ? cat_j2 : cat, generoJ2);
+    if(r2.error){ toast(r2.error); return; }
+
+    const nuevaPareja = { id: uid('p'), j1_id: r1.id, j2_id: r2.id, j1, j2, telefono:'', estado:'aprobada' };
+    if(esSuma){ nuevaPareja.cat_j1 = cat_j1; nuevaPareja.cat_j2 = cat_j2; }
+    t.parejas[cat].push(nuevaPareja);
+    persist(); render();
+  };
+
+  const btnGenerar = document.getElementById('btn-generar-llave');
+  if(btnGenerar){
+    btnGenerar.onclick = async ()=>{
+      if(t.brackets[cat] && !(await mostrarConfirmModal('¿Reiniciar la llave de esta categoría?', { titulo: 'Reiniciar llave', textoOk: 'Reiniciar', peligroso: true }))) return;
+      t.brackets[cat] = generateBracket(t.parejas[cat]);
+      persist(); render();
+    };
+  }
+
+  if(t.brackets[cat]) renderBracketView(t, cat);
+}
+
+function teamLabel(team){
+  if(!team) return '<span style="color:var(--grey);">Por definir</span>';
+  if(team.bye) return '<span style="color:var(--grey);font-style:italic;">BYE</span>';
+  return `${escapeHtml(team.j1)} / ${escapeHtml(team.j2)}`;
+}
+
+function renderBracketView(t, cat){
+  const rounds = t.brackets[cat];
+  const wrap = document.getElementById('bracket-view');
+  wrap.innerHTML = '';
+  rounds.forEach((round, ri)=>{
+    const roundEl = document.createElement('div');
+    roundEl.className = 'round';
+    const lab = document.createElement('div');
+    lab.className = 'round-label';
+    lab.textContent = roundLabel(ri, rounds.length);
+    roundEl.appendChild(lab);
+
+    round.forEach((match, mi)=>{
+      const matchEl = document.createElement('div');
+      matchEl.className = 'match';
+      const canDecide = match.teamA && match.teamB && !match.teamA.bye && !match.teamB.bye && !match.winner;
+      const decided = !!match.winner;
+
+      const sideClass = team => {
+        if(!team) return 'tbd';
+        if(team.bye) return 'bye';
+        if(decided && team.id===match.winner?.id) return 'winner';
+        return '';
+      };
+
+      matchEl.innerHTML = `
+        <div class="side ${sideClass(match.teamA)}">
+          <span>${teamLabel(match.teamA)}</span>
+          ${canDecide ? `<button class="win-btn" data-round="${ri}" data-match="${mi}" data-side="A">Ganó</button>` : ''}
+        </div>
+        <div class="side ${sideClass(match.teamB)}">
+          <span>${teamLabel(match.teamB)}</span>
+          ${canDecide ? `<button class="win-btn" data-round="${ri}" data-match="${mi}" data-side="B">Ganó</button>` : ''}
+        </div>
+        ${decided ? `<div class="decided-tag">Definido ✓</div>` : ''}
+      `;
+      roundEl.appendChild(matchEl);
+    });
+    wrap.appendChild(roundEl);
+  });
+
+  wrap.querySelectorAll('.win-btn').forEach(btn=>{
+    btn.onclick = ()=>{
+      const ri = parseInt(btn.dataset.round), mi = parseInt(btn.dataset.match);
+      const match = rounds[ri][mi];
+      const winner = btn.dataset.side==='A' ? match.teamA : match.teamB;
+      const loser = btn.dataset.side==='A' ? match.teamB : match.teamA;
+      propagateWinner(rounds, ri, mi, winner);
+      // Sumar puntos de ranking según la posición alcanzada (configurable), y
+      // dejar registro permanente del partido ganado/perdido para cada jugador
+      registrarResultadoPartido(state, t.id, t.nombre, cat, rounds, ri, mi, winner, loser);
+      persist(); render();
+    };
+  });
+}
 
 async function crearTorneo(){
   const nombre = await mostrarPromptModal('Nombre del torneo', { placeholder: 'Ej: Apertura Marzo', textoOk: 'Crear' });
