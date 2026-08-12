@@ -1331,6 +1331,7 @@ function yaSeInscribioEnTorneo(t){
 // el que todavía no se anotó) le mostramos una notificación flotante — y se
 // la repetimos cada 2 minutos mientras siga en la página sin haberse anotado.
 function chequearNotificacionTorneo(){
+  if(!_puedeAvisarTorneo) return;
   if(!session || !miPerfil || !miPerfil.categoria || !state) return;
   const ahora = Date.now();
   const candidatos = state.torneos.filter(t => {
@@ -1926,7 +1927,6 @@ loginFormModal.addEventListener('submit', async (e)=>{
     await cargarSesionYPerfil();
     closeAuthModal();
     renderInscripcionSection();
-    chequearNotificacionTorneo();
     retomarTorneoPendienteTrasLogin();
   }catch(err){
     errorEl.textContent = 'Email o contraseña incorrectos.';
@@ -1953,7 +1953,6 @@ signupFormModal.addEventListener('submit', async (e)=>{
       await cargarSesionYPerfil();
       closeAuthModal();
       renderInscripcionSection();
-      chequearNotificacionTorneo();
       retomarTorneoPendienteTrasLogin();
     } else {
       noteEl.style.display = 'block';
@@ -2054,75 +2053,60 @@ function renderNavAuth(){
   const cont = document.getElementById('nav-auth');
   if(session && miPerfil){
     const btnAdmin = esAdminActual ? `<a href="admin.html" class="btn-auth">Panel de administración</a>` : '';
-    const btnNotif = soportaNotificacionesPush() ? `<button class="btn-auth" id="btn-notif-nav">Activar notificaciones</button>` : '';
-    cont.innerHTML = `${btnAdmin}${btnNotif}<div class="nav-user">Hola, <b>${escapeHtml(miPerfil.nombre.split(' ')[0])}</b></div><button class="btn-auth" id="btn-logout-nav">Cerrar sesión</button>`;
+    cont.innerHTML = `${btnAdmin}<div class="nav-user">Hola, <b>${escapeHtml(miPerfil.nombre.split(' ')[0])}</b></div><button class="btn-auth" id="btn-logout-nav">Cerrar sesión</button>`;
     document.getElementById('btn-logout-nav').onclick = async ()=>{
       await cerrarSesionJugador(supabase);
       session = null; miPerfil = null; esAdminActual = false;
       renderNavAuth();
     };
-    if(soportaNotificacionesPush()){
-      wireBotonNotif();
-    }
   } else {
     cont.innerHTML = `<button class="btn-auth" id="btn-login-nav">Iniciar sesión</button>`;
     document.getElementById('btn-login-nav').onclick = openAuthModal;
   }
 }
 
-// Botón "Activar notificaciones" en el header: queda como respaldo manual
-// para quien haya cerrado el cartel automático diciendo "Ahora no" y después
-// se arrepienta. Se oculta si este dispositivo ya tiene una suscripción
-// activa, o si el permiso ya quedó bloqueado a nivel sistema (ahí no hay
-// nada que un botón pueda hacer — solo se puede destrabar desde los ajustes
-// del navegador/celular).
-async function wireBotonNotif(){
-  const btn = document.getElementById('btn-notif-nav');
-  if(!btn) return;
-  if(typeof Notification !== 'undefined' && Notification.permission === 'denied'){
-    btn.style.display = 'none';
-    return;
-  }
-  const suscripcionActual = await obtenerSuscripcionPushActual();
-  if(suscripcionActual){ btn.style.display = 'none'; return; }
-
-  btn.onclick = async ()=>{
-    btn.disabled = true; btn.textContent = 'Activando…';
-    try{
-      await activarNotificacionesPush(supabase, session.user.id);
-      btn.textContent = 'Notificaciones activadas ✓';
-      setTimeout(()=>{ btn.style.display = 'none'; }, 1800);
-    }catch(err){
-      console.error(err);
-      alert(err.message || 'No se pudieron activar las notificaciones.');
-      btn.disabled = false; btn.textContent = 'Activar notificaciones';
-    }
-  };
-}
-
 // ============================================================
 // Cartel automático de "¿Querés recibir notificaciones?"
 // ============================================================
-// Se muestra solo (sin que la persona tenga que ir a buscar un botón) apenas
-// inicia sesión, pero solo si: el navegador soporta push, todavía no
-// contestó nada a nivel sistema (ni activó ni bloqueó), no hay ya una
-// suscripción guardada en este dispositivo, y no se lo mostramos ya en esta
-// misma carga de página (para no ser pesados si por algún motivo se vuelve
-// a llamar a cargarSesionYPerfil).
+// Se muestra solo (sin botón en el header, sacado por ser muy grande y
+// porque este cartel ya cubre el mismo caso) apenas inicia sesión, pero solo
+// si: el navegador soporta push, todavía no contestó nada a nivel sistema
+// (ni activó ni bloqueó), no hay ya una suscripción guardada en este
+// dispositivo, y no se lo mostramos ya en esta misma carga de página. Si
+// alguien dice "Ahora no", se le vuelve a preguntar en su próximo inicio de
+// sesión (no queda ningún botón manual dando vueltas).
+//
+// intentarMostrarModalNotificaciones() devuelve una promesa que se resuelve
+// cuando ya terminamos con este cartel (se cerró, o directamente no
+// aplicaba) — así el aviso de "se abrió tu categoría" puede esperar a que
+// esto termine antes de aparecer (ver habilitarNotifTorneoTrasLogin), en vez
+// de mostrarse los dos carteles casi encima uno del otro.
 let _notifModalYaMostrada = false;
+let _resolverModalNotif = null;
 
-async function intentarMostrarModalNotificaciones(){
-  if(_notifModalYaMostrada) return;
-  if(!session || !miPerfil) return;
-  if(!soportaNotificacionesPush()) return;
-  if(typeof Notification === 'undefined' || Notification.permission !== 'default') return;
-  const suscripcionActual = await obtenerSuscripcionPushActual();
-  if(suscripcionActual) return;
+function intentarMostrarModalNotificaciones(){
+  return new Promise(async (resolve)=>{
+    if(_notifModalYaMostrada || !session || !miPerfil || !soportaNotificacionesPush()){
+      resolve(); return;
+    }
+    if(typeof Notification === 'undefined' || Notification.permission !== 'default'){
+      resolve(); return;
+    }
+    const suscripcionActual = await obtenerSuscripcionPushActual();
+    if(suscripcionActual){ resolve(); return; }
 
+    const modal = document.getElementById('notif-permiso-modal');
+    if(!modal){ resolve(); return; }
+    _notifModalYaMostrada = true;
+    modal.classList.add('open');
+    _resolverModalNotif = resolve;
+  });
+}
+
+function cerrarModalNotificaciones(){
   const modal = document.getElementById('notif-permiso-modal');
-  if(!modal) return;
-  _notifModalYaMostrada = true;
-  modal.classList.add('open');
+  if(modal) modal.classList.remove('open');
+  if(_resolverModalNotif){ _resolverModalNotif(); _resolverModalNotif = null; }
 }
 
 function wireModalNotificaciones(){
@@ -2138,17 +2122,35 @@ function wireModalNotificaciones(){
     }catch(err){
       console.error('No se pudo activar notificaciones:', err);
     }finally{
-      modal.classList.remove('open');
       btnSi.disabled = false; btnSi.textContent = 'Sí, activar';
-      renderNavAuth(); // por si el botón del header también debe ocultarse ahora
+      cerrarModalNotificaciones();
     }
   };
 
-  btnNo.onclick = ()=>{
-    modal.classList.remove('open');
-  };
+  btnNo.onclick = cerrarModalNotificaciones;
 
-  modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); });
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) cerrarModalNotificaciones(); });
+}
+
+// ============================================================
+// Aviso de "se abrió la inscripción de tu categoría" — espera su turno
+// ============================================================
+// Para no mostrar dos carteles casi pegados apenas alguien inicia sesión,
+// este aviso queda "en pausa" hasta que el cartel de notificaciones haya
+// terminado su curso, y recién ahí espera un minuto más antes de habilitarse
+// (chequearNotificacionTorneo, definida más abajo, revisa esta bandera antes
+// de mostrar nada).
+let _puedeAvisarTorneo = false;
+let _timeoutAvisoTorneo = null;
+
+async function habilitarNotifTorneoTrasLogin(){
+  _puedeAvisarTorneo = false;
+  if(_timeoutAvisoTorneo) clearTimeout(_timeoutAvisoTorneo);
+  await intentarMostrarModalNotificaciones();
+  _timeoutAvisoTorneo = setTimeout(()=>{
+    _puedeAvisarTorneo = true;
+    chequearNotificacionTorneo();
+  }, 60000);
 }
 
 const TEXTO_GATE_DEFAULT = 'Para inscribir tu pareja necesitás una cuenta. Creála o iniciá sesión — te va a pedir tus datos una sola vez.';
@@ -2181,7 +2183,7 @@ async function cargarSesionYPerfil(){
     esAdminActual = false;
   }
   renderNavAuth();
-  intentarMostrarModalNotificaciones();
+  habilitarNotifTorneoTrasLogin();
 }
 
 // En mobile, el navegador dispara "resize" también cuando se esconde/muestra
@@ -2271,7 +2273,6 @@ programarRecordatorioInstalarApp();
     renderVistaLlave();
     poblarFiltroCategoriaProximos();
     renderProximosPartidos();
-    chequearNotificacionTorneo();
     activarReveal();
     suscribirseATorneo(supabase, aplicarNuevoStatePublico, { estadoInicial: state });
     setInterval(chequearNotificacionTorneo, 20000);
