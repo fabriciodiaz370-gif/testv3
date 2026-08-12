@@ -137,6 +137,23 @@
   .toast.show{opacity:1;transform:translateY(0);}
   .loading{padding:60px;text-align:center;color:var(--grey);}
 
+  /* ---- Modal propio (reemplaza a prompt()/confirm() del navegador) ---- */
+  .app-modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(3px);z-index:1000;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .app-modal-overlay.open{display:flex;}
+  .app-modal-box{
+    background:linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);border:1px solid var(--line);
+    border-radius:16px;padding:24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.6);
+    overflow:hidden;
+  }
+  .app-modal-title{font-family:var(--font-display);font-weight:800;font-size:1.02rem;margin-bottom:10px;}
+  .app-modal-body{font-size:0.88rem;color:var(--grey);line-height:1.6;margin-bottom:18px;white-space:pre-line;}
+  .app-modal-box .field{margin-bottom:18px;}
+  .app-modal-actions{display:flex;flex-direction:column;gap:10px;width:100%;}
+  .app-modal-actions .btn{width:100%;min-width:0;box-sizing:border-box;justify-content:center;}
+
   .file-input{display:none;}
 
   /* ---- Login ---- */
@@ -196,6 +213,23 @@
   <div class="toast" id="toast">Guardado ✓</div>
 </div>
 
+<!-- Modal genérico: reemplaza a confirm()/prompt() del navegador por un
+     cartel con el mismo estilo del resto del panel. Se arma y controla
+     desde JS (ver mostrarConfirmModal / mostrarPromptModal). -->
+<div class="app-modal-overlay" id="app-modal">
+  <div class="app-modal-box">
+    <div class="app-modal-title" id="app-modal-title"></div>
+    <div class="app-modal-body" id="app-modal-body"></div>
+    <div class="field" id="app-modal-input-wrap" style="display:none;">
+      <input type="text" id="app-modal-input">
+    </div>
+    <div class="app-modal-actions">
+      <button type="button" class="btn btn-primary" id="app-modal-ok">Confirmar</button>
+      <button type="button" class="btn btn-outline" id="app-modal-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
@@ -226,6 +260,67 @@ function toast(msg){
   toastEl.textContent = msg;
   toastEl.classList.add('show');
   setTimeout(()=>toastEl.classList.remove('show'), 1800);
+}
+
+// ============================================================
+// Modal genérico (reemplaza a confirm()/prompt() del navegador)
+// ============================================================
+// Los cartelitos nativos del navegador (confirm/prompt) no se pueden
+// estilizar y desentonan con el resto del panel. Estas dos funciones abren
+// el mismo modal (#app-modal) pero con el diseño del sitio, y devuelven una
+// promesa — se usan con "await" en vez de llamar a confirm()/prompt()
+// directamente, tal cual quedaban antes.
+function _appModalBase({ titulo, mensaje, conInput, placeholder, valorInicial, textoOk, textoCancel, peligroso }){
+  return new Promise((resolve)=>{
+    const overlay = document.getElementById('app-modal');
+    const inputWrap = document.getElementById('app-modal-input-wrap');
+    const input = document.getElementById('app-modal-input');
+    const btnOk = document.getElementById('app-modal-ok');
+    const btnCancel = document.getElementById('app-modal-cancel');
+
+    document.getElementById('app-modal-title').textContent = titulo || '';
+    document.getElementById('app-modal-body').textContent = mensaje || '';
+    document.getElementById('app-modal-body').style.display = mensaje ? 'block' : 'none';
+
+    inputWrap.style.display = conInput ? 'block' : 'none';
+    input.value = valorInicial || '';
+    input.placeholder = placeholder || '';
+
+    btnOk.textContent = textoOk || (conInput ? 'Crear' : 'Confirmar');
+    btnOk.className = 'btn ' + (peligroso ? 'btn-danger' : 'btn-primary');
+    btnCancel.textContent = textoCancel || 'Cancelar';
+
+    function cerrar(valor){
+      overlay.classList.remove('open');
+      btnOk.onclick = null; btnCancel.onclick = null;
+      overlay.onclick = null;
+      document.removeEventListener('keydown', onKeyDown);
+      resolve(valor);
+    }
+    function onKeyDown(e){
+      if(e.key === 'Escape') cerrar(conInput ? null : false);
+      if(e.key === 'Enter' && conInput) cerrar(input.value.trim());
+    }
+
+    btnOk.onclick = ()=> cerrar(conInput ? input.value.trim() : true);
+    btnCancel.onclick = ()=> cerrar(conInput ? null : false);
+    overlay.onclick = (e)=>{ if(e.target === overlay) cerrar(conInput ? null : false); };
+    document.addEventListener('keydown', onKeyDown);
+
+    overlay.classList.add('open');
+    if(conInput) setTimeout(()=> input.focus(), 50);
+  });
+}
+
+// Reemplazo de confirm(mensaje) — devuelve true/false.
+function mostrarConfirmModal(mensaje, { titulo = 'Confirmar', textoOk, peligroso = false } = {}){
+  return _appModalBase({ titulo, mensaje, conInput: false, textoOk, peligroso });
+}
+
+// Reemplazo de prompt(mensaje) — devuelve el texto ingresado, o null si se
+// canceló (igual que prompt() nativo).
+function mostrarPromptModal(titulo, { placeholder = '', valorInicial = '', textoOk = 'Crear' } = {}){
+  return _appModalBase({ titulo, conInput: true, placeholder, valorInicial, textoOk });
 }
 
 // Dispara una notificación push sin bloquear ni romper el resto del flujo:
@@ -400,8 +495,12 @@ function wireTorneoPanel(t){
     persist(); render();
   });
 
-  document.getElementById('btn-borrar-torneo').onclick = ()=>{
-    if(!confirm(`¿Eliminar "${t.nombre}"?\n\nLos puntos de ranking y los partidos ganados/perdidos de los jugadores que ya jugaron en este torneo NO se pierden. Solo se borra el torneo (llave, parejas, partidos programados).`)) return;
+  document.getElementById('btn-borrar-torneo').onclick = async ()=>{
+    const ok = await mostrarConfirmModal(
+      `¿Eliminar "${t.nombre}"?\n\nLos puntos de ranking y los partidos ganados/perdidos de los jugadores que ya jugaron en este torneo NO se pierden. Solo se borra el torneo (llave, parejas, partidos programados).`,
+      { titulo: 'Eliminar torneo', textoOk: 'Eliminar', peligroso: true }
+    );
+    if(!ok) return;
     state.torneos = state.torneos.filter(x=>x.id!==t.id);
     activeTorneoId = state.torneos[0]?.id || null;
     persist(); render();
@@ -426,21 +525,21 @@ function wireTorneoPanel(t){
   };
 
   document.querySelectorAll('.check-pill[data-genero]').forEach(el=>{
-    el.onclick = ()=>{
+    el.onclick = async ()=>{
       const nuevoGenero = el.dataset.genero;
       if(nuevoGenero === t.genero) return;
       const hayParejas = Object.values(t.parejas||{}).some(arr=>(arr||[]).length>0);
-      if(hayParejas && !confirm('Ya hay parejas cargadas en este torneo. Cambiar el género no las va a validar retroactivamente ¿Continuar?')) return;
+      if(hayParejas && !(await mostrarConfirmModal('Ya hay parejas cargadas en este torneo. Cambiar el género no las va a validar retroactivamente ¿Continuar?', { titulo: 'Cambiar género' }))) return;
       t.genero = nuevoGenero;
       persist(); render();
     };
   });
 
   document.querySelectorAll('.check-pill[data-cat]').forEach(el=>{
-    el.onclick = ()=>{
+    el.onclick = async ()=>{
       const cat = el.dataset.cat;
       if(t.categorias.includes(cat)){
-        if(!confirm(`¿Quitar ${getCategoriaLabel(state,cat)}?`)) return;
+        if(!(await mostrarConfirmModal(`¿Quitar ${getCategoriaLabel(state,cat)}?`, { titulo: 'Quitar categoría', peligroso: true }))) return;
         t.categorias = t.categorias.filter(c=>c!==cat);
         delete t.parejas[cat]; delete t.brackets[cat];
       } else {
@@ -539,13 +638,14 @@ function renderPostulacionesPanel(t){
 
 function wirePostulacionesPanel(t){
   document.querySelectorAll('[data-aprobar]').forEach(btn=>{
-    btn.onclick = ()=>{
+    btn.onclick = async ()=>{
       const [cat, id] = btn.dataset.aprobar.split(':');
       const p = (t.parejas[cat]||[]).find(x=>x.id===id);
       if(!p) return;
       const cupoInfo = getCupoInfo(t);
       if(cupoInfo && cupoInfo.lleno){
-        if(!confirm(`Este torneo ya llegó a su cupo de ${cupoInfo.cupo} parejas. ¿Aprobar igual?`)) return;
+        const ok = await mostrarConfirmModal(`Este torneo ya llegó a su cupo de ${cupoInfo.cupo} parejas. ¿Aprobar igual?`, { titulo: 'Cupo completo' });
+        if(!ok) return;
       }
       p.estado = 'aprobada'; persist(); render();
       avisarPush(
@@ -556,9 +656,10 @@ function wirePostulacionesPanel(t){
     };
   });
   document.querySelectorAll('[data-rechazar]').forEach(btn=>{
-    btn.onclick = ()=>{
+    btn.onclick = async ()=>{
       const [cat, id] = btn.dataset.rechazar.split(':');
-      if(!confirm('¿Rechazar?')) return;
+      const ok = await mostrarConfirmModal('¿Rechazar?', { titulo: 'Rechazar postulación', textoOk: 'Rechazar', peligroso: true });
+      if(!ok) return;
       const p = (t.parejas[cat]||[]).find(x=>x.id===id);
       t.parejas[cat] = (t.parejas[cat]||[]).filter(x=>x.id!==id);
       persist(); render();
@@ -675,8 +776,8 @@ function wireCategoriaContent(t, cat){
 
   const btnGenerar = document.getElementById('btn-generar-llave');
   if(btnGenerar){
-    btnGenerar.onclick = ()=>{
-      if(t.brackets[cat] && !confirm('¿Reiniciar?')) return;
+    btnGenerar.onclick = async ()=>{
+      if(t.brackets[cat] && !(await mostrarConfirmModal('¿Reiniciar la llave de esta categoría?', { titulo: 'Reiniciar llave', textoOk: 'Reiniciar', peligroso: true }))) return;
       t.brackets[cat] = generateBracket(t.parejas[cat]);
       persist(); render();
     };
@@ -747,11 +848,16 @@ function renderBracketView(t, cat){
   });
 }
 
-function crearTorneo(){
-  const nombre = prompt('Nombre del torneo:');
+async function crearTorneo(){
+  const nombre = await mostrarPromptModal('Nombre del torneo', { placeholder: 'Ej: Apertura Marzo', textoOk: 'Crear' });
   if(!nombre) return;
   const nuevo = {
-    id: uid('t'), nombre, fecha:'', lugar:'', estado:'abierto', inscripcionAbierta: true,
+    // Arranca con la inscripción CERRADA a propósito: así, cuando el admin
+    // termine de configurar categorías/género y recién ahí toque "Abiertas",
+    // se dispara de verdad la notificación de "nuevo torneo en tu categoría"
+    // (si ya arrancara abierto, ese primer click nunca pasaría de cerrado a
+    // abierto, y la notificación no se mandaría nunca).
+    id: uid('t'), nombre, fecha:'', lugar:'', estado:'abierto', inscripcionAbierta: false,
     genero: 'masculino', // se puede cambiar después desde el panel del torneo
     categorias: [], parejas:{}, brackets:{}, partidos: [], cupo: null
   };
@@ -962,12 +1068,13 @@ function renderConfigSection(){
   };
 
   document.querySelectorAll('[data-quitar-suma]').forEach(el=>{
-    el.onclick = ()=>{
+    el.onclick = async ()=>{
       const n = parseInt(el.dataset.quitarSuma, 10);
       const code = 'suma' + n;
       const enUso = state.torneos.some(t=>(t.categorias||[]).includes(code));
       if(enUso){ toast(`Suma ${n} está en uso en algún torneo, no se puede quitar`); return; }
-      if(!confirm(`¿Quitar Suma ${n}?`)) return;
+      const ok = await mostrarConfirmModal(`¿Quitar Suma ${n}?`, { titulo: 'Quitar categoría Suma', peligroso: true });
+      if(!ok) return;
       state.config.categoriasSuma = (state.config.categoriasSuma||[]).filter(x=>x!==n);
       persist(); render();
     };
@@ -1069,8 +1176,9 @@ function renderJugadoresSection(){
   });
 
   document.querySelectorAll('[data-delete]').forEach(btn=>{
-    btn.onclick = ()=>{
-      if(!confirm('¿Borrar jugador?')) return;
+    btn.onclick = async ()=>{
+      const ok = await mostrarConfirmModal('¿Borrar jugador?', { titulo: 'Borrar jugador', textoOk: 'Borrar', peligroso: true });
+      if(!ok) return;
       state.jugadores = state.jugadores.filter(j=>j.id!==btn.dataset.delete);
       persist(); render();
     };
