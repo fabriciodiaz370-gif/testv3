@@ -2,238 +2,328 @@
 <html lang="es-AR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Pádel Miramar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Admin — Training y Pádel Miramar</title>
+<meta name="theme-color" content="#080b12">
+<link rel="apple-touch-icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#0B0B0B; --card:#161616; --card-2:#1D1D1D; --line:#2A2A2A;
-    --lime:#D2F23A; --lime-dim:rgba(210,242,58,0.15);
-    --white:#F5F5F5; --grey:#9B9B9B; --red:#E5484D; --red-dim:rgba(229,72,77,0.15);
-    --font-display:'Montserrat',sans-serif; --font-body:'Inter',sans-serif;
+  :root {
+    --bg: #080b12;
+    --card: #0e121c;
+    --card-2: #151a26;
+    --line: #1e2433;
+    --blue: #3b82f6;
+    --blue-glow: rgba(59, 130, 246, 0.4);
+    --blue-dim: rgba(59, 130, 246, 0.15);
+    --lime: #d2f23a;
+    --lime-glow: rgba(210, 242, 58, 0.4);
+    --lime-dim: rgba(210, 242, 58, 0.12);
+    --white: #f5f5f5;
+    --grey: #8a93a6;
+    --red: #e5484d;
+    --red-dim: rgba(229, 72, 77, 0.15);
+    --font-display: 'Montserrat', sans-serif;
+    --font-body: 'Inter', sans-serif;
   }
-  *{margin:0;padding:0;box-sizing:border-box;}
-  html{overflow-x:hidden;width:100%;}
-  body{overflow-x:hidden;width:100%;background:var(--bg);color:var(--white);font-family:var(--font-body);line-height:1.5;}
-  a{color:inherit;text-decoration:none;}
-  button, select, input{font-family:var(--font-body);}
-  input, select{
-    background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--white);
-    padding:10px 12px;font-size:0.9rem;outline:none;width:100%;
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { overflow-x: hidden; width: 100%; }
+  body {
+    overflow-x: hidden; width: 100%; min-height: 100vh; position: relative;
+    background: var(--bg); color: var(--white); font-family: var(--font-body); line-height: 1.5;
   }
-  input:focus, select:focus{border-color:var(--lime);}
-  label{font-size:0.72rem;color:var(--grey);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;display:block;margin-bottom:6px;}
-
-  nav{
-    display:flex;align-items:center;justify-content:space-between;padding:14px 4vw;gap:10px;flex-wrap:wrap;
-    border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:10;
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(59, 130, 246, 0.12) 0%, transparent 55%),
+      radial-gradient(circle at 90% 100%, rgba(210, 242, 58, 0.06) 0%, transparent 55%);
   }
-  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:900;font-size:0.88rem;}
-  @media(min-width:640px){ .brand{font-size:1.05rem;} }
-  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--lime);flex-shrink:0;}
-  .navlink{font-weight:700;font-size:0.76rem;color:var(--grey);border:1px solid var(--line);padding:8px 12px;border-radius:8px;white-space:nowrap;}
-  @media(min-width:640px){ .navlink{font-size:0.82rem;padding:9px 16px;} }
-  .navlink:hover{color:var(--white);border-color:var(--lime);}
+  a { color: inherit; text-decoration: none; }
+  button, select, input { font-family: var(--font-body); }
 
-  .section-tabs{display:flex;gap:6px;padding:14px 4vw;border-bottom:1px solid var(--line);flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .section-tab{
-    font-weight:700;font-size:0.78rem;padding:9px 14px;border-radius:8px;background:var(--card-2);border:1px solid var(--line);
-    color:var(--grey);cursor:pointer;white-space:nowrap;flex-shrink:0;
+  input, select {
+    background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; color: var(--white);
+    padding: 12px 14px; font-size: 0.9rem; outline: none; width: 100%;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  @media(min-width:640px){ .section-tabs{padding:20px 4vw;gap:8px;} .section-tab{font-size:0.85rem;padding:10px 18px;} }
-  .section-tab.active{background:var(--lime);color:#0B0B0B;border-color:var(--lime);}
-
-  .layout{display:grid;grid-template-columns:1fr;gap:0;max-width:1800px;margin:0 auto;}
-  @media(min-width:900px){.layout{grid-template-columns:280px 1fr;}}
-  /* Los hijos de un grid no se achican por debajo del contenido más ancho
-     que tengan adentro (acá, la llave del torneo, que necesita 700px para
-     dibujarse) a menos que se les diga explícitamente min-width:0. Sin
-     esto, aunque la llave tenga su propio scroll interno (.bracket-wrap),
-     terminaba empujando el ancho de TODA la página en mobile. */
-  .layout > *{min-width:0;}
-
-  .sidebar{padding:26px 20px;border-right:1px solid var(--line);display:none;}
-  .sidebar.show{display:block;}
-  .sidebar h3{font-family:var(--font-display);font-size:0.85rem;letter-spacing:0.06em;color:var(--grey);margin-bottom:16px;}
-  .torneo-item{
-    padding:13px 14px;border-radius:10px;border:1px solid var(--line);margin-bottom:8px;cursor:pointer;
-    font-size:0.88rem;font-weight:600;transition:all .15s;
+  input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 12px var(--blue-glow); }
+  label {
+    font-size: 0.72rem; color: var(--grey); text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 700; font-family: var(--font-display); display: block; margin-bottom: 8px;
   }
-  .torneo-item:hover{border-color:var(--lime);}
-  .torneo-item.active{background:var(--lime-dim);border-color:var(--lime);color:var(--lime);}
-  .torneo-item small{display:block;color:var(--grey);font-weight:500;font-size:0.74rem;margin-top:2px;}
-  .torneo-item.active small{color:var(--lime);opacity:0.75;}
 
-  .btn{
-    font-weight:700;font-size:0.85rem;padding:12px 18px;border-radius:9px;border:none;cursor:pointer;
-    display:inline-flex;align-items:center;gap:8px;transition:transform .15s;
+  /* ---- Nav ---- */
+  nav {
+    display: flex; align-items: center; justify-content: space-between; padding: 14px 5vw; gap: 14px;
+    flex-wrap: wrap; background: rgba(8, 11, 18, 0.85); backdrop-filter: blur(12px);
+    border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 200;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
   }
-  .btn:hover{transform:translateY(-1px);}
-  .btn-primary{background:var(--lime);color:#0B0B0B;}
-  .btn-outline{background:transparent;color:var(--white);border:1.5px solid var(--line);}
-  .btn-outline:hover{border-color:var(--lime);}
-  .btn-danger{background:var(--red-dim);color:var(--red);}
-  .btn-block{width:100%;justify-content:center;}
-  .btn-sm{padding:8px 12px;font-size:0.78rem;}
-
-  .main{padding:18px 4vw 50px;}
-  @media(min-width:640px){ .main{padding:26px 4vw 60px;} }
-  .section{display:none;}
-  .section.active{display:block;}
-  
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px;}
-  @media(min-width:640px){ .panel{border-radius:16px;padding:26px;margin-bottom:22px;} }
-  .panel h2{font-family:var(--font-display);font-weight:800;font-size:1rem;margin-bottom:16px;display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;}
-  @media(min-width:640px){ .panel h2{font-size:1.15rem;margin-bottom:18px;} }
-  .grid-2{display:grid;grid-template-columns:1fr;gap:14px;}
-  @media(min-width:640px){.grid-2{grid-template-columns:1fr 1fr;}}
-  .grid-3{display:grid;grid-template-columns:1fr;gap:14px;}
-  @media(min-width:760px){.grid-3{grid-template-columns:1fr 1fr 1fr;}}
-  /* Mismo motivo que .layout > *: sin esto, cualquier cosa angosta-pero-con-
-     contenido-ancho adentro de una de estas grillas (como el panel de
-     "Parejas y llave") vuelve a empujar el ancho de toda la página. */
-  .grid-2 > *, .grid-3 > *{min-width:0;}
-  .field{margin-bottom:0;}
-
-  .check-pill{
-    padding:9px 16px;border-radius:8px;border:1px solid var(--line);font-size:0.82rem;font-weight:700;cursor:pointer;color:var(--grey);
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand-icon { width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
+  @media(min-width:640px) { .brand-icon { width: 54px; height: 54px; } }
+  .brand-icon img { width: 100%; height: 100%; object-fit: contain; }
+  .brand-name { font-family: var(--font-display); font-weight: 700; font-size: 0.62rem; line-height: 1.3; color: var(--blue); letter-spacing: 0.02em; white-space: nowrap; }
+  .brand-name span { display: block; color: var(--white); font-size: 0.86rem; font-weight: 900; }
+  @media(min-width:640px) { .brand-name { font-size: 0.74rem; } .brand-name span { font-size: 1.02rem; } }
+  .nav-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .navlink {
+    font-family: var(--font-display); font-weight: 800; font-size: 0.7rem; letter-spacing: 0.03em;
+    color: var(--grey); border: 1px solid var(--line); background: var(--card-2); padding: 9px 14px;
+    border-radius: 9px; white-space: nowrap; cursor: pointer; text-transform: uppercase; transition: all 0.2s;
   }
-  .check-pill.active{background:var(--lime);color:#0B0B0B;border-color:var(--lime);}
+  .navlink:hover { color: var(--blue); border-color: var(--blue); }
 
-  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
-  .tab{padding:9px 18px;border-radius:8px;background:var(--card-2);border:1px solid var(--line);color:var(--grey);font-weight:700;font-size:0.82rem;cursor:pointer;}
-  .tab.active{background:var(--lime);color:#0B0B0B;border-color:var(--lime);}
-
-  .pareja-row, .jugador-row{
-    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-    padding:11px 14px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;
+  /* ---- Section tabs ---- */
+  .section-tabs {
+    display: flex; gap: 8px; padding: 14px 5vw; border-bottom: 1px solid var(--line); flex-wrap: nowrap;
+    overflow-x: auto; -webkit-overflow-scrolling: touch; position: sticky; top: 65px; z-index: 90;
+    background: rgba(8, 11, 18, 0.72); backdrop-filter: blur(10px);
   }
-  .pareja-row .nombre, .jugador-row .nombre{font-size:0.88rem;font-weight:600;min-width:0;word-break:break-word;}
-  .pareja-row > div, .jugador-row > div{min-width:0;}
-  .pareja-row .x, .jugador-row .x{cursor:pointer;color:var(--red);width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .pareja-row .x:hover, .jugador-row .x:hover{background:var(--red-dim);}
-  
-  .foto-preview{width:60px;height:60px;border-radius:8px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
-  .foto-preview img{width:100%;height:100%;object-fit:cover;}
-  .foto-preview.empty{color:var(--grey);font-size:0.7rem;}
-
-  .add-pareja-form, .add-jugador-form{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
-  .add-pareja-form input, .add-jugador-form input, .add-jugador-form select{flex:1;min-width:140px;}
-
-  .empty-state{color:var(--grey);font-size:0.88rem;text-align:center;padding:30px 10px;}
-
-  /* La llave mantiene su tamaño natural (nada de achicarla con scale) y usa
-     scroll horizontal propio cuando no entra — así el texto y los botones
-     siguen siendo cómodos de leer/tocar en el celular, en vez de quedar
-     diminutos. */
-  .bracket-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-top:6px;}
-  .bracket{display:flex;gap:36px;min-width:760px;}
-  .round{display:flex;flex-direction:column;justify-content:space-around;gap:16px;flex:1;min-width:220px;}
-  .round-label{text-align:center;font-size:0.72rem;font-weight:700;color:var(--grey);letter-spacing:0.08em;margin-bottom:4px;}
-  .match{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:0.88rem;}
-  .match .side{display:flex;align-items:center;justify-content:space-between;padding:7px 4px;gap:8px;}
-  .match .side.winner{color:var(--lime);font-weight:700;}
-  .match .side.bye{color:var(--grey);font-style:italic;}
-  .match .side.tbd{color:var(--grey);}
-  .win-btn{
-    font-size:0.76rem;font-weight:700;padding:7px 12px;border-radius:6px;border:1px solid var(--lime);
-    background:var(--lime-dim);color:var(--lime);cursor:pointer;flex-shrink:0;
+  @media(min-width:640px) { .section-tabs { top: 82px; padding: 18px 5vw; gap: 10px; } }
+  .section-tab {
+    font-family: var(--font-display); font-weight: 800; font-size: 0.74rem; letter-spacing: 0.04em;
+    padding: 10px 16px; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line);
+    color: var(--grey); cursor: pointer; white-space: nowrap; flex-shrink: 0; text-transform: uppercase;
+    transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   }
-  .win-btn:hover{background:var(--lime);color:#0B0B0B;}
-  .decided-tag{font-size:0.68rem;color:var(--lime);}
-
-  .toast{
-    position:fixed;bottom:20px;right:20px;background:var(--card-2);border:1px solid var(--lime);color:var(--lime);
-    padding:12px 18px;border-radius:10px;font-size:0.85rem;font-weight:600;opacity:0;transform:translateY(10px);
-    transition:all .25s;pointer-events:none;z-index:100;
+  @media(min-width:640px) { .section-tab { font-size: 0.82rem; padding: 11px 20px; } }
+  .section-tab:hover { color: var(--white); border-color: var(--blue); }
+  .section-tab.active {
+    background: linear-gradient(135deg, #d9f542 0%, #bada28 100%); color: #07090e; border-color: transparent;
+    box-shadow: 0 0 15px rgba(210,242,58,0.35);
   }
-  .toast.show{opacity:1;transform:translateY(0);}
-  .loading{padding:60px;text-align:center;color:var(--grey);}
 
-  /* ---- Modal propio (reemplaza a prompt()/confirm() del navegador) ---- */
-  .app-modal-overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(3px);z-index:1000;
-    display:none;align-items:center;justify-content:center;padding:20px;
-  }
-  .app-modal-overlay.open{display:flex;}
-  .app-modal-box{
-    background:linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);border:1px solid var(--line);
-    border-radius:16px;padding:24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.6);
-    overflow:hidden;
-  }
-  .app-modal-title{font-family:var(--font-display);font-weight:800;font-size:1.02rem;margin-bottom:10px;}
-  .app-modal-body{font-size:0.88rem;color:var(--grey);line-height:1.6;margin-bottom:18px;white-space:pre-line;}
-  .app-modal-box .field{margin-bottom:18px;}
-  .app-modal-actions{display:flex;flex-direction:column;gap:10px;width:100%;}
-  .app-modal-actions .btn{width:100%;min-width:0;box-sizing:border-box;justify-content:center;}
+  /* ---- Layout ---- */
+  .layout { display: grid; grid-template-columns: 1fr; gap: 0; max-width: 1800px; margin: 0 auto; position: relative; z-index: 1; }
+  @media(min-width:900px) { .layout { grid-template-columns: 300px 1fr; } }
+  .layout > * { min-width: 0; }
 
-  .file-input{display:none;}
+  .sidebar { padding: 22px 16px; border-right: 1px solid var(--line); display: none; }
+  .sidebar.show { display: block; }
+  .sidebar h3 { font-family: var(--font-display); font-weight: 900; font-size: 0.76rem; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 16px; text-transform: uppercase; }
+  .torneo-item {
+    padding: 14px; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 10px; cursor: pointer;
+    font-size: 0.88rem; font-weight: 700; background: var(--card); transition: all 0.2s ease;
+  }
+  .torneo-item:hover { border-color: var(--blue); }
+  .torneo-item.active {
+    background: linear-gradient(135deg, rgba(210,242,58,0.2) 0%, rgba(210,242,58,0.05) 100%);
+    border-color: var(--lime); color: var(--lime); box-shadow: 0 0 15px rgba(210,242,58,0.15);
+  }
+  .torneo-item small { display: block; color: var(--grey); font-weight: 600; font-size: 0.72rem; margin-top: 4px; }
+  .torneo-item.active small { color: var(--lime); opacity: 0.8; }
+
+  /* ---- Buttons ---- */
+  .btn {
+    font-family: var(--font-display); font-weight: 800; font-size: 0.85rem; padding: 12px 20px; border-radius: 10px;
+    border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    text-transform: uppercase; letter-spacing: 0.03em; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .btn:active { transform: translateY(1px) scale(0.98); }
+  .btn-primary {
+    background: linear-gradient(135deg, #d9f542 0%, #bada28 100%); color: #07090e;
+    box-shadow: 0 4px 20px rgba(210, 242, 58, 0.3), inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(210, 242, 58, 0.5), inset 0 1px 0 rgba(255,255,255,0.5); }
+  .btn-outline {
+    background: rgba(14, 18, 28, 0.7); color: var(--white); border: 1.5px solid rgba(59, 130, 246, 0.5);
+    backdrop-filter: blur(8px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+  .btn-outline:hover { border-color: var(--blue); background: rgba(59, 130, 246, 0.15); transform: translateY(-2px); }
+  .btn-danger { background: var(--red-dim); color: var(--red); border: 1px solid rgba(229,72,77,0.3); }
+  .btn-danger:hover { background: rgba(229,72,77,0.25); transform: translateY(-2px); }
+  .btn-block { width: 100%; justify-content: center; }
+  .btn-sm { padding: 9px 14px; font-size: 0.76rem; }
+
+  .main { padding: 22px 5vw 60px; position: relative; z-index: 1; }
+  @media(min-width:640px) { .main { padding: 32px 5vw 70px; } }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ---- Panels ---- */
+  .panel {
+    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);
+    border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 18px;
+    position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .panel::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--blue), var(--lime)); opacity: 0.6;
+  }
+  @media(min-width:640px) { .panel { border-radius: 20px; padding: 30px; margin-bottom: 26px; } }
+  @media(min-width:1200px) { .panel { padding: 38px; } }
+  .panel h2 {
+    font-family: var(--font-display); font-weight: 900; font-size: 1rem; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px; justify-content: space-between; flex-wrap: wrap;
+    letter-spacing: 0.02em; text-transform: uppercase;
+  }
+  @media(min-width:640px) { .panel h2 { font-size: 1.18rem; } }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media(min-width:640px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+  .grid-3 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media(min-width:760px) { .grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
+  @media(min-width:1200px) { .grid-2, .grid-3 { gap: 22px; } }
+  .grid-2 > *, .grid-3 > * { min-width: 0; }
+  .field { margin-bottom: 0; }
+
+  .check-pill {
+    padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.82rem;
+    font-weight: 700; cursor: pointer; color: var(--grey); background: var(--card-2); transition: all 0.2s ease;
+  }
+  .check-pill:hover { color: var(--white); border-color: var(--blue); }
+  .check-pill.active {
+    background: linear-gradient(135deg, rgba(210, 242, 58, 0.25) 0%, rgba(210, 242, 58, 0.05) 100%);
+    border-color: var(--lime); color: var(--lime); box-shadow: 0 0 15px rgba(210,242,58,0.2);
+  }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tab {
+    padding: 10px 18px; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line);
+    color: var(--grey); font-weight: 800; font-size: 0.8rem; cursor: pointer; font-family: var(--font-display);
+    text-transform: uppercase; letter-spacing: 0.02em; transition: all 0.2s ease;
+  }
+  .tab:hover { color: var(--white); border-color: var(--blue); }
+  .tab.active { background: linear-gradient(135deg, #d9f542 0%, #bada28 100%); color: #07090e; border-color: transparent; }
+
+  .pareja-row, .jugador-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    padding: 13px 16px; background: var(--card-2); border: 1px solid var(--line); border-radius: 12px;
+    margin-bottom: 10px; transition: border-color 0.2s;
+  }
+  .pareja-row:hover, .jugador-row:hover { border-color: #2b354a; }
+  .pareja-row .nombre, .jugador-row .nombre { font-size: 0.88rem; font-weight: 700; min-width: 0; word-break: break-word; }
+  .pareja-row > div, .jugador-row > div { min-width: 0; }
+  .pareja-row .x, .jugador-row .x {
+    cursor: pointer; color: var(--red); width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s;
+  }
+  .pareja-row .x:hover, .jugador-row .x:hover { background: var(--red-dim); }
+
+  .foto-preview {
+    width: 60px; height: 60px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;
+  }
+  .foto-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .foto-preview.empty { color: var(--grey); font-size: 0.7rem; }
+
+  .add-pareja-form, .add-jugador-form { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .add-pareja-form input, .add-jugador-form input, .add-jugador-form select { flex: 1; min-width: 140px; }
+
+  .empty-state {
+    color: var(--grey); font-size: 0.88rem; text-align: center; padding: 36px 14px;
+    background: rgba(8,11,18,0.3); border: 1px dashed var(--line); border-radius: 14px;
+  }
+
+  /* ---- Llave / bracket ---- */
+  .bracket-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-top: 8px; }
+  .bracket { display: flex; gap: 36px; min-width: 760px; }
+  .round { display: flex; flex-direction: column; justify-content: space-around; gap: 16px; flex: 1; min-width: 220px; }
+  .round-label {
+    text-align: center; font-family: var(--font-display); font-size: 0.74rem; font-weight: 800;
+    color: var(--blue); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;
+    background: var(--card-2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 0;
+  }
+  .match {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 13px;
+    font-size: 0.88rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: border-color 0.2s;
+  }
+  .match:hover { border-color: var(--blue); }
+  .match .side { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px; gap: 8px; }
+  .match .side.winner { color: var(--lime); font-weight: 800; }
+  .match .side.bye { color: var(--grey); font-style: italic; }
+  .match .side.tbd { color: var(--grey); }
+  .win-btn {
+    font-family: var(--font-display); font-size: 0.72rem; font-weight: 800; padding: 8px 13px; border-radius: 8px;
+    border: 1px solid var(--lime); background: var(--lime-dim); color: var(--lime); cursor: pointer;
+    flex-shrink: 0; text-transform: uppercase; transition: all 0.2s;
+  }
+  .win-btn:hover { background: var(--lime); color: #07090e; }
+  .decided-tag { font-size: 0.68rem; color: var(--lime); font-weight: 700; text-align: center; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* ---- Toast ---- */
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border: 1px solid var(--lime);
+    color: var(--lime); padding: 14px 20px; border-radius: 12px; font-size: 0.85rem; font-weight: 700;
+    font-family: var(--font-display); opacity: 0; transform: translateY(10px); transition: all 0.25s;
+    pointer-events: none; z-index: 1500; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .loading { padding: 90px 20px; text-align: center; color: var(--grey); font-family: var(--font-display); font-weight: 700; letter-spacing: 0.03em; }
+
+  /* ---- Modal genérico (confirm/prompt) ---- */
+  .app-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(5,7,12,0.78); backdrop-filter: blur(4px);
+    z-index: 2000; align-items: center; justify-content: center; padding: 20px;
+  }
+  .app-modal-overlay.open { display: flex; }
+  .app-modal-box {
+    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border: 1px solid var(--line);
+    border-radius: 18px; padding: 26px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .app-modal-title { font-family: var(--font-display); font-weight: 900; font-size: 1.05rem; margin-bottom: 12px; }
+  .app-modal-body { font-size: 0.88rem; color: var(--grey); line-height: 1.6; margin-bottom: 18px; white-space: pre-line; }
+  .app-modal-box .field { margin-bottom: 18px; }
+  .app-modal-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .app-modal-actions .btn { width: 100%; min-width: 0; box-sizing: border-box; justify-content: center; }
+
+  .file-input { display: none; }
 
   /* ---- Login ---- */
-  .login-wrap{
-    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; z-index: 1; }
+  .login-card {
+    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border: 1px solid var(--line);
+    border-radius: 20px; padding: 36px 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    position: relative; overflow: hidden;
   }
-  .login-card{
-    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px 26px;
-    width:100%;max-width:360px;
-  }
-  .login-brand{
-    display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:900;
-    font-size:0.95rem;margin-bottom:26px;
-  }
-  .login-brand .dot{width:10px;height:10px;border-radius:50%;background:var(--lime);flex-shrink:0;}
-  .login-card .field{margin-bottom:14px;}
-  .login-error{
-    color:var(--red);font-size:0.8rem;font-weight:600;min-height:18px;margin-bottom:6px;
-  }
+  .login-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--blue), var(--lime)); }
+  .login-brand { display: flex; align-items: center; gap: 12px; font-family: var(--font-display); font-weight: 900; font-size: 0.92rem; margin-bottom: 30px; }
+  .login-brand .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--lime); flex-shrink: 0; box-shadow: 0 0 10px var(--lime-glow); }
+  .login-card .field { margin-bottom: 16px; }
+  .login-error { color: var(--red); font-size: 0.8rem; font-weight: 600; min-height: 18px; margin-bottom: 6px; }
 
   /* ======================================================================
-     SOLO CELULAR (hasta 639px) — la PC no se toca, sigue exactamente igual.
-     Achica los márgenes/padding exteriores para que los paneles usen más
-     ancho de pantalla, y agranda texto/botones/inputs para que todo sea más
-     cómodo de leer y tocar con el dedo.
+     SOLO CELULAR (hasta 639px): pantalla completa, sin bordes ni márgenes
+     exteriores — los paneles van de punta a punta y se apilan como una app.
   ====================================================================== */
   @media(max-width:639px){
-    nav{padding:12px 10px;}
-    .brand{font-size:0.95rem;}
-    .navlink{font-size:0.8rem;padding:9px 13px;}
-    .section-tabs{padding:12px 10px;gap:7px;}
-    .section-tab{font-size:0.82rem;padding:10px 15px;}
-    .main{padding:12px 8px 50px;}
-    .panel{padding:14px 10px;border-radius:10px;margin-bottom:14px;}
-    .panel h2{font-size:1.05rem;}
-    .grid-2, .grid-3{gap:16px;}
+    nav { padding: 12px 14px; }
+    .brand-name { font-size: 0.6rem; } .brand-name span { font-size: 0.82rem; }
+    .navlink { font-size: 0.68rem; padding: 8px 11px; }
+    .section-tabs { padding: 10px 12px; gap: 7px; top: 61px; }
+    .main { padding: 12px 0 60px; }
+    .sidebar { padding: 16px 14px; border-right: none; border-bottom: 1px solid var(--line); }
 
-    /* Los inputs usaban el mismo negro que el fondo de la página, así que
-       visualmente se "fundían" con el borde exterior y daban la sensación
-       de un margen negro enorme. Con un fondo propio (más claro que el
-       fondo general) se distinguen del borde y el panel se ve más lleno,
-       de punta a punta. */
-    label{font-size:0.76rem;}
-    input, select{padding:13px 14px;font-size:1rem;background:var(--card-2);border-color:#383838;}
-    .btn{font-size:0.92rem;padding:13px 18px;}
-    .btn-sm{font-size:0.82rem;padding:9px 14px;}
-    .check-pill{font-size:0.86rem;padding:10px 17px;background:var(--card-2);}
-    .tab{font-size:0.86rem;padding:10px 19px;}
+    .panel { border-radius: 0; border-left: none; border-right: none; padding: 16px 14px; margin-bottom: 10px; }
+    .panel::before { display: none; }
+    .panel h2 { font-size: 1.05rem; }
+    .grid-2, .grid-3 { gap: 16px; }
 
-    .pareja-row, .jugador-row{padding:13px 12px;}
-    .pareja-row .nombre, .jugador-row .nombre{font-size:0.94rem;}
-    .foto-preview{width:66px;height:66px;}
+    label { font-size: 0.76rem; }
+    input, select { padding: 13px 14px; font-size: 1rem; }
+    .btn { font-size: 0.9rem; padding: 13px 18px; }
+    .btn-sm { font-size: 0.82rem; padding: 10px 14px; }
+    .check-pill { font-size: 0.86rem; padding: 11px 17px; }
+    .tab { font-size: 0.84rem; padding: 10px 17px; }
 
-    /* La llave: en vez de forzar scroll horizontal, en celular las rondas
-       se apilan una debajo de la otra a todo el ancho disponible — así no
-       hay que deslizar para el costado y se lee/toca todo más grande. El
-       padding de cada tarjeta se achica (no así el texto) para que el
-       contenido gane todo el ancho posible: los bordes negros al costado
-       venían de sumar el padding del panel + el padding de cada tarjeta. */
-    .bracket-wrap{overflow-x:visible;padding-top:4px;}
-    .bracket{flex-direction:column;min-width:0;gap:22px;}
-    .round{min-width:0;gap:10px;}
-    .round-label{text-align:left;font-size:0.8rem;margin-bottom:6px;padding-left:0;}
-    .match{padding:12px 10px;font-size:0.96rem;}
-    .match .side{padding:8px 0;gap:10px;}
-    .win-btn{font-size:0.82rem;padding:9px 15px;}
+    .pareja-row, .jugador-row { padding: 14px 12px; }
+    .pareja-row .nombre, .jugador-row .nombre { font-size: 0.94rem; }
+    .foto-preview { width: 66px; height: 66px; }
+
+    /* La llave se apila en vertical, a todo el ancho, sin scroll horizontal */
+    .bracket-wrap { overflow-x: visible; padding-top: 4px; }
+    .bracket { flex-direction: column; min-width: 0; gap: 22px; }
+    .round { min-width: 0; gap: 10px; }
+    .round-label { text-align: left; padding-left: 12px; font-size: 0.78rem; }
+    .match { padding: 13px 11px; font-size: 0.96rem; }
+    .match .side { padding: 9px 0; gap: 10px; }
+    .win-btn { font-size: 0.82rem; padding: 10px 15px; }
+
+    .app-modal-box, .login-card { border-radius: 16px; }
   }
 </style>
 </head>
@@ -241,7 +331,7 @@
 
 <div id="login-screen" class="login-wrap">
   <form id="login-form" class="login-card">
-    <div class="login-brand"><span class="dot"></span>PÁDEL MIRAMAR · ADMIN</div>
+    <div class="login-brand"><span class="dot"></span>TRAINING Y PÁDEL MIRAMAR · ADMIN</div>
     <div class="field">
       <label>Email</label>
       <input id="login-email" type="email" autocomplete="username" required>
@@ -257,8 +347,11 @@
 
 <div id="admin-panel" style="display:none;">
   <nav>
-    <div class="brand"><span class="dot"></span>PÁDEL MIRAMAR · ADMIN</div>
-    <div style="display:flex;gap:10px;">
+    <div class="brand">
+      <div class="brand-icon"><img src="logo.png" alt="Training y Pádel Miramar" onerror="this.style.display='none'"></div>
+      <div class="brand-name">TRAINING Y<span>PÁDEL MIRAMAR · ADMIN</span></div>
+    </div>
+    <div class="nav-actions">
       <a class="navlink" href="index.html">Ver sitio público →</a>
       <button class="navlink" id="btn-logout" style="cursor:pointer;">Cerrar sesión</button>
     </div>
@@ -462,7 +555,7 @@ function render(){
 function renderTorneosSection(){
   const t = activeTorneo();
   const el = document.getElementById('section-torneos');
-  
+
   // Lista de torneos
   const list = document.getElementById('torneo-list');
   if(list){
@@ -1325,7 +1418,7 @@ function editarJugador(jId){
 
   document.getElementById('btn-close-edit').onclick = ()=>render();
   document.getElementById('btn-upload-foto').onclick = ()=>document.getElementById('file-foto').click();
-  
+
   document.getElementById('file-foto').onchange = (e)=>{
     const file = e.target.files[0];
     if(!file) return;
