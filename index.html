@@ -722,7 +722,10 @@
   .pwa-modal-box{
     background:linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);border:1px solid var(--line);
     border-radius:18px;padding:26px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.6);position:relative;
+    overflow:hidden;
   }
+  .pwa-modal-actions{display:flex;flex-direction:column;gap:10px;width:100%;}
+  .pwa-modal-actions .btn{width:100%;min-width:0;box-sizing:border-box;}
   .pwa-modal-close{
     position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
     background:var(--card-2);color:var(--grey);font-size:1.1rem;line-height:1;cursor:pointer;
@@ -958,9 +961,9 @@
     <div class="pwa-modal-body" style="margin-bottom:20px;">
       Te avisamos cuando te acepten en un torneo, te programen un partido o se abra la inscripción en tu categoría.
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button type="button" class="btn btn-primary btn-action" id="notif-permiso-si" style="flex:1 1 auto;">Sí, activar</button>
-      <button type="button" class="btn btn-outline" id="notif-permiso-no" style="flex:1 1 auto;">Ahora no</button>
+    <div class="pwa-modal-actions">
+      <button type="button" class="btn btn-primary btn-action" id="notif-permiso-si">Sí, activar</button>
+      <button type="button" class="btn btn-outline" id="notif-permiso-no">Ahora no</button>
     </div>
   </div>
 </div>
