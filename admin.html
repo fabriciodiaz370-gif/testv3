@@ -46,6 +46,12 @@
 
   .layout{display:grid;grid-template-columns:1fr;gap:0;max-width:1400px;margin:0 auto;}
   @media(min-width:900px){.layout{grid-template-columns:280px 1fr;}}
+  /* Los hijos de un grid no se achican por debajo del contenido más ancho
+     que tengan adentro (acá, la llave del torneo, que necesita 700px para
+     dibujarse) a menos que se les diga explícitamente min-width:0. Sin
+     esto, aunque la llave tenga su propio scroll interno (.bracket-wrap),
+     terminaba empujando el ancho de TODA la página en mobile. */
+  .layout > *{min-width:0;}
 
   .sidebar{padding:26px 20px;border-right:1px solid var(--line);display:none;}
   .sidebar.show{display:block;}
