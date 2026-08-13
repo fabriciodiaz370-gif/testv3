@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tienda — Training y Pádel Miramar</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#080b12">
+<link rel="apple-touch-icon" href="logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pádel Miramar">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg: #080b12;
+--card: #0e121c;
+--card-2: #151a26;
+--line: #1e2433;
+--blue: #3b82f6;
+--blue-glow: rgba(59, 130, 246, 0.4);
+--blue-dim: rgba(59, 130, 246, 0.15);
+--lime: #d2f23a;
+--lime-glow: rgba(210, 242, 58, 0.4);
+--lime-dim: rgba(210, 242, 58, 0.12);
+--white: #f5f5f5;
+--grey: #8a93a6;
+--font-display: 'Montserrat', sans-serif;
+--font-body: 'Inter', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { overflow-x: hidden; width: 100%; }
+body {
+overflow-x: hidden; width: 100%;
+background: var(--bg) url('hero-banner-padel-bg-blue.png') center/cover no-repeat scroll;
+color: var(--white); font-family: var(--font-body); line-height: 1.5;
+}
+@media(min-width:920px) {
+body { background-attachment: fixed; }
+}
+a { color: inherit; text-decoration: none; }
+button, select, input { font-family: var(--font-body); }
+
+/* Navbar */
+nav {
+display: flex; align-items: center; justify-content: space-between; padding: 14px 5vw;
+background: rgba(8, 11, 18, 0.85); backdrop-filter: blur(12px); border-bottom: 2px solid var(--blue);
+position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 14px;
+box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+}
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.brand-icon {
+width: 68px; height: 68px; margin: -9px 0; display: flex; align-items: center; justify-content: center;
+flex-shrink: 0; position: relative; z-index: 2;
+}
+@media(min-width:640px) { .brand-icon { width: 118px; height: 118px; margin: -19px 0; } }
+.brand-name { font-family: var(--font-display); font-weight: 700; font-size: 0.68rem; line-height: 1.3; color: var(--blue); letter-spacing: 0.02em; white-space: nowrap; }
+.brand-name span { display: block; color: var(--white); font-size: 1rem; font-weight: 900; letter-spacing: 0.005em; }
+@media(min-width:640px) { .brand-name { font-size: 0.8rem; letter-spacing: 0.03em; } .brand-name span { font-size: 1.22rem; } }
+
+.nav-toggle {
+display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; flex-shrink: 0;
+border-radius: 10px; border: 1px solid var(--line); background: var(--card-2); color: var(--white); cursor: pointer;
+}
+.nav-toggle:hover { border-color: var(--blue); color: var(--blue); }
+@media(min-width:920px) { .nav-toggle { display: none; } }
+
+.navlinks {
+display: none; flex-direction: column; width: 100%; gap: 2px; font-weight: 700; font-size: 0.85rem;
+color: var(--white); letter-spacing: 0.05em; position: absolute; top: 100%; left: 0; right: 0;
+background: rgba(8, 11, 18, 0.98); backdrop-filter: blur(12px); border-bottom: 2px solid var(--blue);
+padding: 6px 5vw 16px; box-shadow: 0 14px 30px rgba(0,0,0,0.5);
+}
+.navlinks.open { display: flex; }
+.navlinks a { position: relative; padding: 14px 2px; border-bottom: 1px solid var(--line); transition: color 0.2s ease; }
+.navlinks a:last-child { border-bottom: none; }
+.navlinks a.active, .navlinks a:hover { color: var(--blue); }
+.navlinks a.active::after {
+content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px;
+background: var(--blue); border-radius: 2px; box-shadow: 0 0 8px var(--blue-glow);
+}
+@media(min-width:920px) {
+nav { padding: 16px 5vw; }
+.navlinks {
+display: flex; flex-direction: row; position: static; width: auto; gap: 30px; padding: 0;
+background: none; border: none; box-shadow: none; backdrop-filter: none;
+}
+.navlinks a { padding: 0 0 9px; border-bottom: none; }
+}
+
+section{padding:40px 5vw;max-width:1300px;margin:0 auto;}
+@media(min-width:640px){ section{padding:50px 5vw;} }
+@media(min-width:920px){ section{padding:65px 5vw;} }
+
+/* Revelado al scrollear: la página se va "construyendo" a medida que bajás */
+.reveal {
+  opacity: 0; transform: translateY(38px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.reveal-visible { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* Sección "Próximamente" */
+.tienda-wrap{ min-height:56vh; display:flex; align-items:center; justify-content:center; padding:20px 5vw; text-align:center; }
+.tienda-card{ display:flex; flex-direction:column; align-items:center; gap:18px; max-width:520px; }
+.tienda-icon-circle{
+  width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border:1px solid var(--line);
+  color:var(--lime); box-shadow:0 0 50px rgba(210,242,58,0.18);
+}
+.tienda-title{ font-family:var(--font-display); font-weight:900; font-size:1.9rem; letter-spacing:0.04em; text-transform:uppercase; }
+@media(min-width:640px){ .tienda-title{ font-size:2.4rem; } }
+.tienda-badge{
+  display:inline-flex; align-items:center; gap:8px; font-family:var(--font-display); font-weight:800; font-size:0.78rem;
+  letter-spacing:0.05em; text-transform:uppercase; padding:9px 20px; border-radius:999px;
+  background:var(--lime-dim); color:var(--lime); border:1px solid rgba(210,242,58,0.35);
+}
+.tienda-sub{ color:var(--grey); font-size:0.92rem; line-height:1.75; }
+
+footer {
+padding: 26px 5vw; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 14px;
+border-top: 1px solid var(--line); color: var(--grey); font-size: 0.8rem; background: rgba(8, 11, 18, 0.95);
+text-align: center;
+}
+@media(min-width:640px) { footer { padding: 35px 5vw; justify-content: space-between; font-size: 0.85rem; text-align: left; } }
+.footer-brand { display: flex; align-items: center; gap: 16px; }
+.footer-dev {
+  background: none; border: none; padding: 0; margin: 0; cursor: pointer;
+  font-family: var(--font-body); font-weight: 600; font-size: 0.74rem; color: var(--grey);
+  text-decoration: underline; text-underline-offset: 3px; transition: color 0.2s ease;
+}
+.footer-dev:hover { color: var(--lime); }
+.pwa-modal-actions{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:4px;}
+.dev-contact-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;
+  font-family:var(--font-display);font-weight:800;font-size:0.82rem;letter-spacing:0.03em;
+  padding:12px 16px;border-radius:10px;cursor:pointer;text-transform:uppercase;transition:all .2s ease;
+}
+.dev-contact-btn.primary{ background:linear-gradient(135deg,#d9f542 0%,#bada28 100%); color:#07090e; border:none; }
+.dev-contact-btn.primary:hover{ filter:brightness(1.05); }
+.dev-contact-btn.outline{ background:var(--card-2); color:var(--white); border:1px solid var(--line); }
+.dev-contact-btn.outline:hover{ border-color:var(--blue); color:var(--blue); }
+
+/* Instalar app (PWA) */
+.btn-install-app{
+display:flex;align-items:center;gap:7px;font-family:var(--font-display);font-weight:800;font-size:0.72rem;
+letter-spacing:0.04em;padding:9px 14px;border-radius:9px;border:1px solid var(--lime);background:var(--lime-dim);
+color:var(--lime);cursor:pointer;text-transform:uppercase;white-space:nowrap;transition:all .2s ease;flex-shrink:0;
+}
+.btn-install-app:hover{background:var(--lime);color:#07090e;}
+.btn-install-app svg{flex-shrink:0;}
+@media(max-width:420px){ .btn-install-app span{display:none;} .btn-install-app{padding:9px;} }
+
+.pwa-modal-overlay{
+position:fixed;inset:0;background:rgba(5,7,12,0.78);backdrop-filter:blur(4px);z-index:1000;
+display:none;align-items:center;justify-content:center;padding:20px;
+}
+.pwa-modal-overlay.open{display:flex;}
+.pwa-modal-box{
+background:linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);border:1px solid var(--line);
+border-radius:18px;padding:26px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.6);position:relative;
+}
+.pwa-modal-close{
+position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
+background:var(--card-2);color:var(--grey);font-size:1.1rem;line-height:1;cursor:pointer;
+}
+.pwa-modal-close:hover{color:var(--white);border-color:var(--blue);}
+.pwa-modal-title{font-family:var(--font-display);font-weight:900;font-size:1.05rem;margin-bottom:14px;padding-right:26px;}
+.pwa-modal-body{font-size:0.88rem;color:var(--grey);line-height:1.7;}
+.pwa-modal-body b{color:var(--white);}
+</style>
+</head>
+<body>
+
+<nav>
+<div class="brand">
+<div class="brand-icon">
+<img src="logo.png" alt="Training y Pádel Miramar" style="width:100%;height:100%;object-fit:contain;">
+</div>
+<div class="brand-name">TRAINING Y<span>PÁDEL MIRAMAR</span></div>
+</div>
+<button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+</button>
+<button type="button" class="btn-install-app" id="btn-instalar-app" style="display:none;">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg>
+<span>Instalar app</span>
+</button>
+<div class="navlinks" id="navlinks">
+<a href="index.html">INICIO</a>
+<a href="index.html#proximos">PRÓXIMOS PARTIDOS</a>
+<a href="index.html#llaves">LLAVE DEL TORNEO</a>
+<a href="ranking.html">RANKING</a>
+<a href="tienda.html" class="active">TIENDA</a>
+<a href="index.html#inscripcion">INSCRIPCIÓN</a>
+</div>
+</nav>
+
+<section id="tienda">
+<div class="tienda-wrap">
+<div class="tienda-card reveal">
+<div class="tienda-icon-circle">
+<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+</div>
+<div class="tienda-title">Tienda</div>
+<div class="tienda-badge">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+Próximamente
+</div>
+<p class="tienda-sub">Estamos preparando la tienda online de Training y Pádel Miramar. Muy pronto vas a poder comprar acá indumentaria, accesorios y todo lo del club.</p>
+</div>
+</div>
+</section>
+
+<footer>
+<div>© 2026 Training y Pádel Miramar. Todos los derechos reservados.</div>
+<button type="button" class="footer-dev" id="btn-footer-dev">Desarrollador: Fabricio Liziardi</button>
+</footer>
+
+<!-- Contacto del desarrollador: se abre al tocar "Desarrollador: ..." en el footer -->
+<div class="pwa-modal-overlay" id="dev-contact-modal">
+<div class="pwa-modal-box">
+<button class="pwa-modal-close" id="dev-contact-close" type="button">&times;</button>
+<div class="pwa-modal-title">Fabricio Liziardi</div>
+<div class="pwa-modal-body" style="margin-bottom:20px;">Desarrollador de este sitio.</div>
+<div class="pwa-modal-actions">
+<a class="dev-contact-btn primary" id="dev-contact-whatsapp" href="#" target="_blank" rel="noopener">WhatsApp</a>
+<a class="dev-contact-btn outline" id="dev-contact-instagram" href="#" target="_blank" rel="noopener" style="display:none;">Instagram</a>
+</div>
+</div>
+</div>
+
+<!-- Instrucciones de instalación para iPhone (Safari no permite disparar el instalador por código) -->
+<div class="pwa-modal-overlay" id="pwa-ios-modal">
+<div class="pwa-modal-box">
+<button class="pwa-modal-close" id="pwa-ios-close" type="button">&times;</button>
+<div class="pwa-modal-title">Instalar la app</div>
+<div class="pwa-modal-body">
+1. Tocá el botón <b>Compartir</b> (el cuadradito con la flecha hacia arriba) en la barra de Safari.<br>
+2. Elegí <b>"Agregar a pantalla de inicio"</b>.<br>
+3. Confirmá tocando <b>"Agregar"</b>.
+</div>
+</div>
+</div>
+
+<script type="module">
+import { activarReveal, setupPwaInstall, DEV_WHATSAPP_URL, DEV_INSTAGRAM_URL } from './shared.js?v=19';
+
+function setupNavToggle(){
+const toggle = document.getElementById('nav-toggle');
+const links = document.getElementById('navlinks');
+if(!toggle || !links) return;
+toggle.onclick = ()=>{
+const open = links.classList.toggle('open');
+toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+};
+links.querySelectorAll('a').forEach(a=>{
+a.addEventListener('click', ()=>{
+links.classList.remove('open');
+toggle.setAttribute('aria-expanded', 'false');
+});
+});
+}
+setupNavToggle();
+setupPwaInstall();
+
+function wireDevContactModal(){
+const btn = document.getElementById('btn-footer-dev');
+const modal = document.getElementById('dev-contact-modal');
+if(!btn || !modal) return;
+const closeBtn = document.getElementById('dev-contact-close');
+const waLink = document.getElementById('dev-contact-whatsapp');
+const igLink = document.getElementById('dev-contact-instagram');
+waLink.href = DEV_WHATSAPP_URL;
+if(DEV_INSTAGRAM_URL){
+igLink.href = DEV_INSTAGRAM_URL;
+igLink.style.display = 'flex';
+}
+btn.onclick = ()=> modal.classList.add('open');
+if(closeBtn) closeBtn.onclick = ()=> modal.classList.remove('open');
+modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); });
+}
+wireDevContactModal();
+
+activarReveal();
+</script>
+
+</body>
+</html>
