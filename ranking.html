@@ -198,8 +198,22 @@ text-align: center;
 }
 @media(min-width:640px) { footer { padding: 35px 5vw; justify-content: space-between; font-size: 0.85rem; text-align: left; } }
 .footer-brand { display: flex; align-items: center; gap: 16px; }
-.footer-admin{opacity:0.6;transition:opacity 0.2s;font-weight:600;}
-.footer-admin:hover{opacity:1;color:var(--blue);}
+.footer-dev {
+  background: none; border: none; padding: 0; margin: 0; cursor: pointer;
+  font-family: var(--font-body); font-weight: 600; font-size: 0.74rem; color: var(--grey);
+  text-decoration: underline; text-underline-offset: 3px; transition: color 0.2s ease;
+}
+.footer-dev:hover { color: var(--lime); }
+.pwa-modal-actions{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:4px;}
+.dev-contact-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;
+  font-family:var(--font-display);font-weight:800;font-size:0.82rem;letter-spacing:0.03em;
+  padding:12px 16px;border-radius:10px;cursor:pointer;text-transform:uppercase;transition:all .2s ease;
+}
+.dev-contact-btn.primary{ background:linear-gradient(135deg,#d9f542 0%,#bada28 100%); color:#07090e; border:none; }
+.dev-contact-btn.primary:hover{ filter:brightness(1.05); }
+.dev-contact-btn.outline{ background:var(--card-2); color:var(--white); border:1px solid var(--line); }
+.dev-contact-btn.outline:hover{ border-color:var(--blue); color:var(--blue); }
 
 /* Instalar app (PWA) */
 .btn-install-app{
@@ -272,10 +286,21 @@ RANKING DE JUGADORES
 
 <footer>
 <div>© 2026 Training y Pádel Miramar. Todos los derechos reservados.</div>
-<div class="footer-brand">
-<a class="footer-admin" href="admin.html">Panel de administración</a>
-</div>
+<button type="button" class="footer-dev" id="btn-footer-dev">Desarrollador: Fabricio Liziardi</button>
 </footer>
+
+<!-- Contacto del desarrollador: se abre al tocar "Desarrollador: ..." en el footer -->
+<div class="pwa-modal-overlay" id="dev-contact-modal">
+<div class="pwa-modal-box">
+<button class="pwa-modal-close" id="dev-contact-close" type="button">&times;</button>
+<div class="pwa-modal-title">Fabricio Liziardi</div>
+<div class="pwa-modal-body" style="margin-bottom:20px;">Desarrollador de este sitio.</div>
+<div class="pwa-modal-actions">
+<a class="dev-contact-btn primary" id="dev-contact-whatsapp" href="#" target="_blank" rel="noopener">WhatsApp</a>
+<a class="dev-contact-btn outline" id="dev-contact-instagram" href="#" target="_blank" rel="noopener" style="display:none;">Instagram</a>
+</div>
+</div>
+</div>
 
 <!-- Instrucciones de instalación para iPhone (Safari no permite disparar el instalador por código) -->
 <div class="pwa-modal-overlay" id="pwa-ios-modal">
@@ -295,7 +320,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
 SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, GENEROS,
 loadState, calcularRankingPorCategoria, getJugadorPartidosStats, getAllCategorias, getCategoriaLabel,
-actualizarSelectorCustom, activarReveal, setupPwaInstall, suscribirseATorneo
+actualizarSelectorCustom, activarReveal, setupPwaInstall, suscribirseATorneo,
+DEV_WHATSAPP_URL, DEV_INSTAGRAM_URL
 } from './shared.js?v=19';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -400,6 +426,24 @@ toggle.setAttribute('aria-expanded', 'false');
 }
 setupNavToggle();
 setupPwaInstall();
+
+function wireDevContactModal(){
+const btn = document.getElementById('btn-footer-dev');
+const modal = document.getElementById('dev-contact-modal');
+if(!btn || !modal) return;
+const closeBtn = document.getElementById('dev-contact-close');
+const waLink = document.getElementById('dev-contact-whatsapp');
+const igLink = document.getElementById('dev-contact-instagram');
+waLink.href = DEV_WHATSAPP_URL;
+if(DEV_INSTAGRAM_URL){
+igLink.href = DEV_INSTAGRAM_URL;
+igLink.style.display = 'flex';
+}
+btn.onclick = ()=> modal.classList.add('open');
+if(closeBtn) closeBtn.onclick = ()=> modal.classList.remove('open');
+modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); });
+}
+wireDevContactModal();
 
 // ---- Sincronización en vivo (Supabase Realtime, con respaldo por polling — ver shared.js) ----
 function aplicarNuevoStateRanking(nuevoState){
