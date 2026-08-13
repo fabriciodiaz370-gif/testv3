@@ -705,6 +705,14 @@
   @media(min-width:640px) { footer { padding: 35px 5vw; justify-content: space-between; font-size: 0.85rem; text-align: left; } }
   .footer-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--white); font-family: var(--font-display); }
   .footer-brand svg { color: var(--lime); }
+  .footer-brand-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  @media(min-width:640px) { .footer-brand-col { align-items: flex-end; } }
+  .footer-dev {
+    background: none; border: none; padding: 0; margin: 0; cursor: pointer;
+    font-family: var(--font-body); font-weight: 600; font-size: 0.74rem; color: var(--grey);
+    text-decoration: underline; text-underline-offset: 3px; transition: color 0.2s ease;
+  }
+  .footer-dev:hover { color: var(--lime); }
 
   /* Instalar app (PWA) */
   .btn-install-app{
@@ -970,11 +978,27 @@
   </div>
 </div>
 
+<!-- Contacto del desarrollador: se abre al tocar "Desarrollador: ..." en el footer -->
+<div class="pwa-modal-overlay" id="dev-contact-modal">
+  <div class="pwa-modal-box">
+    <button class="pwa-modal-close" id="dev-contact-close" type="button">&times;</button>
+    <div class="pwa-modal-title">Fabricio Liziardi</div>
+    <div class="pwa-modal-body" style="margin-bottom:20px;">Desarrollador de este sitio.</div>
+    <div class="pwa-modal-actions">
+      <a class="btn btn-primary btn-action" id="dev-contact-whatsapp" href="#" target="_blank" rel="noopener">WhatsApp</a>
+      <a class="btn btn-outline" id="dev-contact-instagram" href="#" target="_blank" rel="noopener" style="display:none;">Instagram</a>
+    </div>
+  </div>
+</div>
+
 <footer id="contacto">
   <div>© 2026 Training y Pádel Miramar. Todos los derechos reservados.</div>
-  <div class="footer-brand">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
-    CLUB PADEL CENTER MIRAMAR
+  <div class="footer-brand-col">
+    <div class="footer-brand">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+      CLUB PADEL CENTER MIRAMAR
+    </div>
+    <button type="button" class="footer-dev" id="btn-footer-dev">Desarrollador: Fabricio Liziardi</button>
   </div>
 </footer>
 
@@ -989,7 +1013,8 @@ import {
   obtenerMiPerfil, asegurarMiPerfil, buscarJugadoresRegistrados, resolverJugadorDesdePerfil,
   encontrarJugadorIdPorPerfil, calcularRankingPorCategoria, getJugadorPartidosStats, getCupoInfo,
   actualizarSelectorCustom, activarReveal, setupPwaInstall, suscribirseATorneo,
-  soportaNotificacionesPush, obtenerSuscripcionPushActual, activarNotificacionesPush
+  soportaNotificacionesPush, obtenerSuscripcionPushActual, activarNotificacionesPush,
+  DEV_WHATSAPP_URL, DEV_INSTAGRAM_URL
 } from './shared.js?v=19';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -2052,7 +2077,7 @@ let esAdminActual = false;
 function renderNavAuth(){
   const cont = document.getElementById('nav-auth');
   if(session && miPerfil){
-    const btnAdmin = esAdminActual ? `<a href="admin.html" class="btn-auth">Panel de administración</a>` : '';
+    const btnAdmin = esAdminActual ? `<a href="admin.html" class="btn-auth">Panel de admin</a>` : '';
     cont.innerHTML = `${btnAdmin}<div class="nav-user">Hola, <b>${escapeHtml(miPerfil.nombre.split(' ')[0])}</b></div><button class="btn-auth" id="btn-logout-nav">Cerrar sesión</button>`;
     document.getElementById('btn-logout-nav').onclick = async ()=>{
       await cerrarSesionJugador(supabase);
@@ -2224,6 +2249,24 @@ function setupNavToggle(){
 }
 setupNavToggle();
 wireModalNotificaciones();
+
+function wireDevContactModal(){
+  const btn = document.getElementById('btn-footer-dev');
+  const modal = document.getElementById('dev-contact-modal');
+  if(!btn || !modal) return;
+  const closeBtn = document.getElementById('dev-contact-close');
+  const waLink = document.getElementById('dev-contact-whatsapp');
+  const igLink = document.getElementById('dev-contact-instagram');
+  waLink.href = DEV_WHATSAPP_URL;
+  if(DEV_INSTAGRAM_URL){
+    igLink.href = DEV_INSTAGRAM_URL;
+    igLink.style.display = 'flex';
+  }
+  btn.onclick = ()=> modal.classList.add('open');
+  if(closeBtn) closeBtn.onclick = ()=> modal.classList.remove('open');
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); });
+}
+wireDevContactModal();
 
 function setupScrollSpy(){
   const navLinksEls = Array.from(document.querySelectorAll('.navlinks a'));
