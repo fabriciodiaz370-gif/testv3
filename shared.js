@@ -96,6 +96,16 @@ export function getTorneoGeneroLabel(codigo){
 }
 
 // ============================================================
+// Contacto del desarrollador (se muestra en un minipanel al tocar
+// "Desarrollador: ..." en el pie de página de index.html, ranking.html
+// y admin.html). Si DEV_INSTAGRAM_URL queda vacío, el botón de Instagram
+// del minipanel no se muestra — completalo acá cuando lo tengas.
+// ============================================================
+export const DEV_NOMBRE = 'Fabricio Liziardi';
+export const DEV_WHATSAPP_URL = 'https://wa.me/5492657392878';
+export const DEV_INSTAGRAM_URL = ''; // ej: 'https://instagram.com/tu_usuario'
+
+// ============================================================
 // Ronda de un partido programado ("próximos partidos"). Es un dato
 // que carga el admin a mano al programar el partido, para mostrar
 // en la web pública (ej: "Octavos de Final").
