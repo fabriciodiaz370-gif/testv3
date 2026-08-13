@@ -1362,6 +1362,12 @@ function chequearNotificacionTorneo(){
   const candidatos = state.torneos.filter(t => {
     if(!t.inscripcionAbierta) return false;
     if(!(t.categorias || []).includes(miPerfil.categoria)) return false;
+    // Mismo filtro de género que usa la notificación push (ver
+    // authIdsElegiblesParaTorneo en shared.js): si el torneo es masculino o
+    // femenino, solo le corresponde a jugadores de ese género. Sin esto, el
+    // cartel de "se abrió tu categoría" le aparecía a cualquiera con la
+    // categoría correcta, sin importar el género del torneo.
+    if(t.genero && t.genero !== 'mixto' && t.genero !== miPerfil.genero) return false;
     if(getCupoInfo(t)?.lleno) return false;
     if(yaSeInscribioEnTorneo(t)) return false;
     const ultima = ultimaNotificacionPorTorneo[t.id];
