@@ -271,6 +271,15 @@
   .app-modal-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
   .app-modal-actions .btn { width: 100%; min-width: 0; box-sizing: border-box; justify-content: center; }
 
+  /* ---- Footer con el crédito del desarrollador ---- */
+  .admin-footer { padding: 20px 24px 28px; text-align: center; }
+  .footer-dev {
+    background: none; border: none; padding: 0; margin: 0; cursor: pointer;
+    font-family: var(--font-body); font-weight: 600; font-size: 0.74rem; color: var(--grey);
+    text-decoration: underline; text-underline-offset: 3px; transition: color 0.2s ease;
+  }
+  .footer-dev:hover { color: var(--lime); }
+
   .file-input { display: none; }
 
   /* ---- Login ---- */
@@ -366,6 +375,10 @@
 
   <div id="app" class="loading">Cargando datos…</div>
   <div class="toast" id="toast">Guardado ✓</div>
+
+  <div class="admin-footer">
+    <button type="button" class="footer-dev" id="btn-footer-dev">Desarrollador: Fabricio Liziardi</button>
+  </div>
 </div>
 
 <!-- Modal genérico: reemplaza a confirm()/prompt() del navegador por un
@@ -385,6 +398,19 @@
   </div>
 </div>
 
+<!-- Contacto del desarrollador: se abre al tocar "Desarrollador: ..." en el footer -->
+<div class="app-modal-overlay" id="dev-contact-modal">
+  <div class="app-modal-box">
+    <div class="app-modal-title">Fabricio Liziardi</div>
+    <div class="app-modal-body">Desarrollador de este sitio.</div>
+    <div class="app-modal-actions">
+      <a class="btn btn-primary" id="dev-contact-whatsapp" href="#" target="_blank" rel="noopener" style="text-decoration:none;">WhatsApp</a>
+      <a class="btn btn-outline" id="dev-contact-instagram" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none;">Instagram</a>
+      <button type="button" class="btn btn-outline" id="dev-contact-close">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
@@ -394,7 +420,8 @@ import {
   resolverJugadorId, registrarResultadoPartido, getPuntosConfig, DEFAULT_PUNTOS_CONFIG, POSICION_LABELS,
   isCategoriaSuma, getAllCategorias, getCategoriaLabel, getCategoriasSumaConfig,
   RONDA_LABELS, RONDA_OPCIONES, getRondaLabel, getCupoInfo, suscribirseATorneo,
-  dispararNotificacion, authIdsDeJugadorIds, authIdsElegiblesParaTorneo
+  dispararNotificacion, authIdsDeJugadorIds, authIdsElegiblesParaTorneo,
+  DEV_WHATSAPP_URL, DEV_INSTAGRAM_URL
 } from './shared.js?v=19';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -482,10 +509,31 @@ function mostrarPromptModal(titulo, { placeholder = '', valorInicial = '', texto
 // si falla (por ejemplo, la Edge Function todavía no está desplegada, o el
 // jugador nunca activó las notificaciones), solo lo dejamos en consola — el
 // guardado de los datos ya se hizo antes de llamar a esta función.
+//
+// Si el admin dispara dos avisos muy seguidos (por ejemplo, abre la
+// inscripción de un torneo mixto de 7ma y después la de un torneo de
+// cualquier género también de 7ma), sin ningún control las dos
+// notificaciones le llegarían al mismo jugador casi juntas — demasiada
+// información de golpe. Para evitarlo, todos los avisos pasan por una
+// cola: el primero sale ya mismo (como hasta ahora), pero si el siguiente
+// se dispara antes de que pase ESPERA_ENTRE_AVISOS_MS desde el anterior,
+// se espera lo que falta antes de mandarlo, así llegan de a uno.
+const ESPERA_ENTRE_AVISOS_MS = 30000; // mínimo 30s entre una notificación push y la siguiente
+let ultimoAvisoPushEn = 0;
+let colaAvisosPush = Promise.resolve();
+
 function avisarPush(authIds, titulo, cuerpo, url){
   if(!authIds || authIds.length === 0) return;
-  dispararNotificacion(supabase, { authIds, titulo, cuerpo, url: url || './index.html' })
-    .catch(err => console.error('No se pudo enviar la notificación push:', err));
+  colaAvisosPush = colaAvisosPush.then(async ()=>{
+    const espera = Math.max(0, (ultimoAvisoPushEn + ESPERA_ENTRE_AVISOS_MS) - Date.now());
+    if(espera > 0) await new Promise(r => setTimeout(r, espera));
+    ultimoAvisoPushEn = Date.now();
+    try{
+      await dispararNotificacion(supabase, { authIds, titulo, cuerpo, url: url || './index.html' });
+    }catch(err){
+      console.error('No se pudo enviar la notificación push:', err);
+    }
+  });
 }
 
 async function persist(){
@@ -1013,7 +1061,13 @@ async function crearTorneo(){
     // (si ya arrancara abierto, ese primer click nunca pasaría de cerrado a
     // abierto, y la notificación no se mandaría nunca).
     id: uid('t'), nombre, fecha:'', lugar:'', estado:'abierto', inscripcionAbierta: false,
-    genero: 'masculino', // se puede cambiar después desde el panel del torneo
+    // Arranca SIN género configurado a propósito: así el panel muestra el
+    // aviso "Sin género configurado" hasta que el admin lo elija a mano. Si
+    // acá pusiéramos un valor por defecto (como antes 'masculino'), un
+    // torneo femenino creado sin tocar la pastilla de género se quedaría
+    // con ese valor por defecto sin que nada lo avise, y las notificaciones
+    // de "nuevo torneo en tu categoría" se mandarían al género equivocado.
+    genero: null,
     categorias: [], parejas:{}, brackets:{}, partidos: [], cupo: null
   };
   state.torneos.push(nuevo);
@@ -1533,6 +1587,24 @@ document.getElementById('btn-logout').onclick = async ()=>{
   await supabase.auth.signOut();
   location.reload();
 };
+
+// ---- Contacto del desarrollador (footer) ----
+(function wireDevContactModal(){
+  const btn = document.getElementById('btn-footer-dev');
+  const modal = document.getElementById('dev-contact-modal');
+  if(!btn || !modal) return;
+  const closeBtn = document.getElementById('dev-contact-close');
+  const waLink = document.getElementById('dev-contact-whatsapp');
+  const igLink = document.getElementById('dev-contact-instagram');
+  waLink.href = DEV_WHATSAPP_URL;
+  if(DEV_INSTAGRAM_URL){
+    igLink.href = DEV_INSTAGRAM_URL;
+    igLink.style.display = 'flex';
+  }
+  btn.onclick = ()=> modal.classList.add('open');
+  closeBtn.onclick = ()=> modal.classList.remove('open');
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); });
+})();
 
 supabase.auth.onAuthStateChange((event)=>{
   if(event === 'SIGNED_OUT'){
