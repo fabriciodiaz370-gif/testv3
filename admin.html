@@ -1,1627 +1,1017 @@
-<!DOCTYPE html>
-<html lang="es-AR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Admin — Training y Pádel Miramar</title>
-<meta name="theme-color" content="#080b12">
-<link rel="apple-touch-icon" href="logo.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #080b12;
-    --card: #0e121c;
-    --card-2: #151a26;
-    --line: #1e2433;
-    --blue: #3b82f6;
-    --blue-glow: rgba(59, 130, 246, 0.4);
-    --blue-dim: rgba(59, 130, 246, 0.15);
-    --lime: #d2f23a;
-    --lime-glow: rgba(210, 242, 58, 0.4);
-    --lime-dim: rgba(210, 242, 58, 0.12);
-    --white: #f5f5f5;
-    --grey: #8a93a6;
-    --red: #e5484d;
-    --red-dim: rgba(229, 72, 77, 0.15);
-    --font-display: 'Montserrat', sans-serif;
-    --font-body: 'Inter', sans-serif;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html { overflow-x: hidden; width: 100%; }
-  body {
-    overflow-x: hidden; width: 100%; min-height: 100vh; position: relative;
-    background: var(--bg); color: var(--white); font-family: var(--font-body); line-height: 1.5;
-  }
-  body::before {
-    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-    background:
-      radial-gradient(circle at 12% 0%, rgba(59, 130, 246, 0.12) 0%, transparent 55%),
-      radial-gradient(circle at 90% 100%, rgba(210, 242, 58, 0.06) 0%, transparent 55%);
-  }
-  a { color: inherit; text-decoration: none; }
-  button, select, input { font-family: var(--font-body); }
+// ============================================================
+// Configuración de Supabase (clave pública, segura de exponer)
+// ============================================================
+export const SUPABASE_URL = 'https://cewwbutnpkjocjynapem.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_C3nZa7XNVocbPOXOGXMNUA_ZhAQZobf';
 
-  input, select {
-    background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; color: var(--white);
-    padding: 12px 14px; font-size: 0.9rem; outline: none; width: 100%;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 12px var(--blue-glow); }
-  label {
-    font-size: 0.72rem; color: var(--grey); text-transform: uppercase; letter-spacing: 0.06em;
-    font-weight: 700; font-family: var(--font-display); display: block; margin-bottom: 8px;
-  }
+export const CATEGORIAS = ['3ra', '4ta', '5ta', '6ta', '7ma', '8va'];
 
-  /* ---- Nav ---- */
-  nav {
-    display: flex; align-items: center; justify-content: space-between; padding: 14px 5vw; gap: 14px;
-    flex-wrap: wrap; background: rgba(8, 11, 18, 0.85); backdrop-filter: blur(12px);
-    border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 200;
-    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
-  }
-  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .brand-icon { width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
-  @media(min-width:640px) { .brand-icon { width: 54px; height: 54px; } }
-  .brand-icon img { width: 100%; height: 100%; object-fit: contain; }
-  .brand-name { font-family: var(--font-display); font-weight: 700; font-size: 0.62rem; line-height: 1.3; color: var(--blue); letter-spacing: 0.02em; white-space: nowrap; }
-  .brand-name span { display: block; color: var(--white); font-size: 0.86rem; font-weight: 900; }
-  @media(min-width:640px) { .brand-name { font-size: 0.74rem; } .brand-name span { font-size: 1.02rem; } }
-  .nav-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .navlink {
-    font-family: var(--font-display); font-weight: 800; font-size: 0.7rem; letter-spacing: 0.03em;
-    color: var(--grey); border: 1px solid var(--line); background: var(--card-2); padding: 9px 14px;
-    border-radius: 9px; white-space: nowrap; cursor: pointer; text-transform: uppercase; transition: all 0.2s;
-  }
-  .navlink:hover { color: var(--blue); border-color: var(--blue); }
+export const CATEGORIA_LABEL = {
+  '3ra': '3ª',
+  '4ta': '4ª',
+  '5ta': '5ª',
+  '6ta': '6ª',
+  '7ma': '7ª',
+  '8va': '8ª'
+};
+// ============================================================
+// Categorías "Suma" (p.ej. Suma 11, Suma 14): la categoría de la
+// pareja surge de sumar la categoría individual de cada jugador.
+// El admin puede crear las que quiera (Suma 5 a Suma 16, o la que sea)
+// desde el panel — no están hardcodeadas, se guardan en state.config.
+// ============================================================
+export const DEFAULT_CATEGORIAS_SUMA = [11, 14];
 
-  /* ---- Section tabs ---- */
-  .section-tabs {
-    display: flex; gap: 8px; padding: 14px 5vw; border-bottom: 1px solid var(--line); flex-wrap: nowrap;
-    overflow-x: auto; -webkit-overflow-scrolling: touch; position: sticky; top: 65px; z-index: 90;
-    background: rgba(8, 11, 18, 0.72); backdrop-filter: blur(10px);
-  }
-  @media(min-width:640px) { .section-tabs { top: 82px; padding: 18px 5vw; gap: 10px; } }
-  .section-tab {
-    font-family: var(--font-display); font-weight: 800; font-size: 0.74rem; letter-spacing: 0.04em;
-    padding: 10px 16px; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line);
-    color: var(--grey); cursor: pointer; white-space: nowrap; flex-shrink: 0; text-transform: uppercase;
-    transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  }
-  @media(min-width:640px) { .section-tab { font-size: 0.82rem; padding: 11px 20px; } }
-  .section-tab:hover { color: var(--white); border-color: var(--blue); }
-  .section-tab.active {
-    background: linear-gradient(135deg, #d9f542 0%, #bada28 100%); color: #07090e; border-color: transparent;
-    box-shadow: 0 0 15px rgba(210,242,58,0.35);
-  }
+export function isCategoriaSuma(codigo){
+  return /^suma\d+$/.test(String(codigo||''));
+}
 
-  /* ---- Layout ---- */
-  .layout { display: grid; grid-template-columns: 1fr; gap: 0; max-width: 1800px; margin: 0 auto; position: relative; z-index: 1; }
-  @media(min-width:900px) { .layout { grid-template-columns: 300px 1fr; } }
-  .layout > * { min-width: 0; }
+export function sumaCategoriaCode(n){
+  return `suma${n}`;
+}
 
-  .sidebar { padding: 22px 16px; border-right: 1px solid var(--line); display: none; }
-  .sidebar.show { display: block; }
-  .sidebar h3 { font-family: var(--font-display); font-weight: 900; font-size: 0.76rem; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 16px; text-transform: uppercase; }
-  .torneo-item {
-    padding: 14px; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 10px; cursor: pointer;
-    font-size: 0.88rem; font-weight: 700; background: var(--card); transition: all 0.2s ease;
-  }
-  .torneo-item:hover { border-color: var(--blue); }
-  .torneo-item.active {
-    background: linear-gradient(135deg, rgba(210,242,58,0.2) 0%, rgba(210,242,58,0.05) 100%);
-    border-color: var(--lime); color: var(--lime); box-shadow: 0 0 15px rgba(210,242,58,0.15);
-  }
-  .torneo-item small { display: block; color: var(--grey); font-weight: 600; font-size: 0.72rem; margin-top: 4px; }
-  .torneo-item.active small { color: var(--lime); opacity: 0.8; }
+export function getCategoriasSumaConfig(state){
+  const arr = (state?.config?.categoriasSuma) || [];
+  return arr.slice().sort((a,b)=>a-b);
+}
 
-  /* ---- Buttons ---- */
-  .btn {
-    font-family: var(--font-display); font-weight: 800; font-size: 0.85rem; padding: 12px 20px; border-radius: 10px;
-    border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
-    text-transform: uppercase; letter-spacing: 0.03em; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .btn:active { transform: translateY(1px) scale(0.98); }
-  .btn-primary {
-    background: linear-gradient(135deg, #d9f542 0%, #bada28 100%); color: #07090e;
-    box-shadow: 0 4px 20px rgba(210, 242, 58, 0.3), inset 0 1px 0 rgba(255,255,255,0.4);
-  }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(210, 242, 58, 0.5), inset 0 1px 0 rgba(255,255,255,0.5); }
-  .btn-outline {
-    background: rgba(14, 18, 28, 0.7); color: var(--white); border: 1.5px solid rgba(59, 130, 246, 0.5);
-    backdrop-filter: blur(8px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  }
-  .btn-outline:hover { border-color: var(--blue); background: rgba(59, 130, 246, 0.15); transform: translateY(-2px); }
-  .btn-danger { background: var(--red-dim); color: var(--red); border: 1px solid rgba(229,72,77,0.3); }
-  .btn-danger:hover { background: rgba(229,72,77,0.25); transform: translateY(-2px); }
-  .btn-block { width: 100%; justify-content: center; }
-  .btn-sm { padding: 9px 14px; font-size: 0.76rem; }
+// Todas las categorías disponibles para armar un torneo: las fijas + las Suma configuradas
+export function getAllCategorias(state){
+  const extra = getCategoriasSumaConfig(state).map(sumaCategoriaCode);
+  return [...CATEGORIAS, ...extra];
+}
 
-  .main { padding: 22px 5vw 60px; position: relative; z-index: 1; }
-  @media(min-width:640px) { .main { padding: 32px 5vw 70px; } }
-  .section { display: none; }
-  .section.active { display: block; }
-
-  /* ---- Panels ---- */
-  .panel {
-    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);
-    border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 18px;
-    position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-  }
-  .panel::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    background: linear-gradient(90deg, var(--blue), var(--lime)); opacity: 0.6;
-  }
-  @media(min-width:640px) { .panel { border-radius: 20px; padding: 30px; margin-bottom: 26px; } }
-  @media(min-width:1200px) { .panel { padding: 38px; } }
-  .panel h2 {
-    font-family: var(--font-display); font-weight: 900; font-size: 1rem; margin-bottom: 18px;
-    display: flex; align-items: center; gap: 10px; justify-content: space-between; flex-wrap: wrap;
-    letter-spacing: 0.02em; text-transform: uppercase;
-  }
-  @media(min-width:640px) { .panel h2 { font-size: 1.18rem; } }
-
-  .grid-2 { display: grid; grid-template-columns: 1fr; gap: 16px; }
-  @media(min-width:640px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
-  .grid-3 { display: grid; grid-template-columns: 1fr; gap: 16px; }
-  @media(min-width:760px) { .grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
-  @media(min-width:1200px) { .grid-2, .grid-3 { gap: 22px; } }
-  .grid-2 > *, .grid-3 > * { min-width: 0; }
-  .field { margin-bottom: 0; }
-
-  .check-pill {
-    padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.82rem;
-    font-weight: 700; cursor: pointer; color: var(--grey); background: var(--card-2); transition: all 0.2s ease;
-  }
-  .check-pill:hover { color: var(--white); border-color: var(--blue); }
-  .check-pill.active {
-    background: linear-gradient(135deg, rgba(210, 242, 58, 0.25) 0%, rgba(210, 242, 58, 0.05) 100%);
-    border-color: var(--lime); color: var(--lime); box-shadow: 0 0 15px rgba(210,242,58,0.2);
-  }
-
-  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .tab {
-    padding: 10px 18px; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line);
-    color: var(--grey); font-weight: 800; font-size: 0.8rem; cursor: pointer; font-family: var(--font-display);
-    text-transform: uppercase; letter-spacing: 0.02em; transition: all 0.2s ease;
-  }
-  .tab:hover { color: var(--white); border-color: var(--blue); }
-  .tab.active { background: linear-gradient(135deg, #d9f542 0%, #bada28 100%); color: #07090e; border-color: transparent; }
-
-  .pareja-row, .jugador-row {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-    padding: 13px 16px; background: var(--card-2); border: 1px solid var(--line); border-radius: 12px;
-    margin-bottom: 10px; transition: border-color 0.2s;
-  }
-  .pareja-row:hover, .jugador-row:hover { border-color: #2b354a; }
-  .pareja-row .nombre, .jugador-row .nombre { font-size: 0.88rem; font-weight: 700; min-width: 0; word-break: break-word; }
-  .pareja-row > div, .jugador-row > div { min-width: 0; }
-  .pareja-row .x, .jugador-row .x {
-    cursor: pointer; color: var(--red); width: 28px; height: 28px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s;
-  }
-  .pareja-row .x:hover, .jugador-row .x:hover { background: var(--red-dim); }
-
-  .foto-preview {
-    width: 60px; height: 60px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line);
-    display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;
-  }
-  .foto-preview img { width: 100%; height: 100%; object-fit: cover; }
-  .foto-preview.empty { color: var(--grey); font-size: 0.7rem; }
-
-  .add-pareja-form, .add-jugador-form { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
-  .add-pareja-form input, .add-jugador-form input, .add-jugador-form select { flex: 1; min-width: 140px; }
-
-  .empty-state {
-    color: var(--grey); font-size: 0.88rem; text-align: center; padding: 36px 14px;
-    background: rgba(8,11,18,0.3); border: 1px dashed var(--line); border-radius: 14px;
-  }
-
-  /* ---- Llave / bracket ---- */
-  .bracket-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-top: 8px; }
-  .bracket { display: flex; gap: 36px; min-width: 760px; }
-  .round { display: flex; flex-direction: column; justify-content: space-around; gap: 16px; flex: 1; min-width: 220px; }
-  .round-label {
-    text-align: center; font-family: var(--font-display); font-size: 0.74rem; font-weight: 800;
-    color: var(--blue); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;
-    background: var(--card-2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 0;
-  }
-  .match {
-    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 13px;
-    font-size: 0.88rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: border-color 0.2s;
-  }
-  .match:hover { border-color: var(--blue); }
-  .match .side { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px; gap: 8px; }
-  .match .side.winner { color: var(--lime); font-weight: 800; }
-  .match .side.bye { color: var(--grey); font-style: italic; }
-  .match .side.tbd { color: var(--grey); }
-  .win-btn {
-    font-family: var(--font-display); font-size: 0.72rem; font-weight: 800; padding: 8px 13px; border-radius: 8px;
-    border: 1px solid var(--lime); background: var(--lime-dim); color: var(--lime); cursor: pointer;
-    flex-shrink: 0; text-transform: uppercase; transition: all 0.2s;
-  }
-  .win-btn:hover { background: var(--lime); color: #07090e; }
-  .decided-tag { font-size: 0.68rem; color: var(--lime); font-weight: 700; text-align: center; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
-
-  /* ---- Toast ---- */
-  .toast {
-    position: fixed; bottom: 20px; right: 20px;
-    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border: 1px solid var(--lime);
-    color: var(--lime); padding: 14px 20px; border-radius: 12px; font-size: 0.85rem; font-weight: 700;
-    font-family: var(--font-display); opacity: 0; transform: translateY(10px); transition: all 0.25s;
-    pointer-events: none; z-index: 1500; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  }
-  .toast.show { opacity: 1; transform: translateY(0); }
-  .loading { padding: 90px 20px; text-align: center; color: var(--grey); font-family: var(--font-display); font-weight: 700; letter-spacing: 0.03em; }
-
-  /* ---- Modal genérico (confirm/prompt) ---- */
-  .app-modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(5,7,12,0.78); backdrop-filter: blur(4px);
-    z-index: 2000; align-items: center; justify-content: center; padding: 20px;
-  }
-  .app-modal-overlay.open { display: flex; }
-  .app-modal-box {
-    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border: 1px solid var(--line);
-    border-radius: 18px; padding: 26px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  }
-  .app-modal-title { font-family: var(--font-display); font-weight: 900; font-size: 1.05rem; margin-bottom: 12px; }
-  .app-modal-body { font-size: 0.88rem; color: var(--grey); line-height: 1.6; margin-bottom: 18px; white-space: pre-line; }
-  .app-modal-box .field { margin-bottom: 18px; }
-  .app-modal-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
-  .app-modal-actions .btn { width: 100%; min-width: 0; box-sizing: border-box; justify-content: center; }
-
-  /* ---- Footer con el crédito del desarrollador ---- */
-  .admin-footer { padding: 20px 24px 28px; text-align: center; }
-  .footer-dev {
-    background: none; border: none; padding: 0; margin: 0; cursor: pointer;
-    font-family: var(--font-body); font-weight: 600; font-size: 0.74rem; color: var(--grey);
-    text-decoration: underline; text-underline-offset: 3px; transition: color 0.2s ease;
-  }
-  .footer-dev:hover { color: var(--lime); }
-
-  .file-input { display: none; }
-
-  /* ---- Login ---- */
-  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; z-index: 1; }
-  .login-card {
-    background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%); border: 1px solid var(--line);
-    border-radius: 20px; padding: 36px 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    position: relative; overflow: hidden;
-  }
-  .login-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--blue), var(--lime)); }
-  .login-brand { display: flex; align-items: center; gap: 12px; font-family: var(--font-display); font-weight: 900; font-size: 0.92rem; margin-bottom: 30px; }
-  .login-brand .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--lime); flex-shrink: 0; box-shadow: 0 0 10px var(--lime-glow); }
-  .login-card .field { margin-bottom: 16px; }
-  .login-error { color: var(--red); font-size: 0.8rem; font-weight: 600; min-height: 18px; margin-bottom: 6px; }
-
-  /* ======================================================================
-     SOLO CELULAR (hasta 639px): pantalla completa, sin bordes ni márgenes
-     exteriores — los paneles van de punta a punta y se apilan como una app.
-  ====================================================================== */
-  @media(max-width:639px){
-    nav { padding: 12px 14px; }
-    .brand-name { font-size: 0.6rem; } .brand-name span { font-size: 0.82rem; }
-    .navlink { font-size: 0.68rem; padding: 8px 11px; }
-    .section-tabs { padding: 10px 12px; gap: 7px; top: 61px; }
-    .main { padding: 12px 0 60px; }
-    .sidebar { padding: 16px 14px; border-right: none; border-bottom: 1px solid var(--line); }
-
-    .panel { border-radius: 0; border-left: none; border-right: none; padding: 16px 14px; margin-bottom: 10px; }
-    .panel::before { display: none; }
-    .panel h2 { font-size: 1.05rem; }
-    .grid-2, .grid-3 { gap: 16px; }
-
-    label { font-size: 0.76rem; }
-    input, select { padding: 13px 14px; font-size: 1rem; }
-    .btn { font-size: 0.9rem; padding: 13px 18px; }
-    .btn-sm { font-size: 0.82rem; padding: 10px 14px; }
-    .check-pill { font-size: 0.86rem; padding: 11px 17px; }
-    .tab { font-size: 0.84rem; padding: 10px 17px; }
-
-    .pareja-row, .jugador-row { padding: 14px 12px; }
-    .pareja-row .nombre, .jugador-row .nombre { font-size: 0.94rem; }
-    .foto-preview { width: 66px; height: 66px; }
-
-    /* La llave se apila en vertical, a todo el ancho, sin scroll horizontal */
-    .bracket-wrap { overflow-x: visible; padding-top: 4px; }
-    .bracket { flex-direction: column; min-width: 0; gap: 22px; }
-    .round { min-width: 0; gap: 10px; }
-    .round-label { text-align: left; padding-left: 12px; font-size: 0.78rem; }
-    .match { padding: 13px 11px; font-size: 0.96rem; }
-    .match .side { padding: 9px 0; gap: 10px; }
-    .win-btn { font-size: 0.82rem; padding: 10px 15px; }
-
-    .app-modal-box, .login-card { border-radius: 16px; }
-  }
-</style>
-</head>
-<body>
-
-<div id="login-screen" class="login-wrap">
-  <form id="login-form" class="login-card">
-    <div class="login-brand"><span class="dot"></span>TRAINING Y PÁDEL MIRAMAR · ADMIN</div>
-    <div class="field">
-      <label>Email</label>
-      <input id="login-email" type="email" autocomplete="username" required>
-    </div>
-    <div class="field">
-      <label>Contraseña</label>
-      <input id="login-password" type="password" autocomplete="current-password" required>
-    </div>
-    <div class="login-error" id="login-error"></div>
-    <button type="submit" class="btn btn-primary btn-block" id="login-btn">Ingresar</button>
-  </form>
-</div>
-
-<div id="admin-panel" style="display:none;">
-  <nav>
-    <div class="brand">
-      <div class="brand-icon"><img src="logo.png" alt="Training y Pádel Miramar" onerror="this.style.display='none'"></div>
-      <div class="brand-name">TRAINING Y<span>PÁDEL MIRAMAR · ADMIN</span></div>
-    </div>
-    <div class="nav-actions">
-      <a class="navlink" href="index.html">Ver sitio público →</a>
-      <button class="navlink" id="btn-logout" style="cursor:pointer;">Cerrar sesión</button>
-    </div>
-  </nav>
-
-  <div class="section-tabs">
-    <button class="section-tab active" data-section="torneos">Torneos & Llave</button>
-    <button class="section-tab" data-section="partidos">Partidos</button>
-    <button class="section-tab" data-section="jugadores">Jugadores</button>
-    <button class="section-tab" data-section="config">Configuración</button>
-  </div>
-
-  <div id="app" class="loading">Cargando datos…</div>
-  <div class="toast" id="toast">Guardado ✓</div>
-
-  <div class="admin-footer">
-    <button type="button" class="footer-dev" id="btn-footer-dev">Desarrollador: Fabricio Liziardi</button>
-  </div>
-</div>
-
-<!-- Modal genérico: reemplaza a confirm()/prompt() del navegador por un
-     cartel con el mismo estilo del resto del panel. Se arma y controla
-     desde JS (ver mostrarConfirmModal / mostrarPromptModal). -->
-<div class="app-modal-overlay" id="app-modal">
-  <div class="app-modal-box">
-    <div class="app-modal-title" id="app-modal-title"></div>
-    <div class="app-modal-body" id="app-modal-body"></div>
-    <div class="field" id="app-modal-input-wrap" style="display:none;">
-      <input type="text" id="app-modal-input">
-    </div>
-    <div class="app-modal-actions">
-      <button type="button" class="btn btn-primary" id="app-modal-ok">Confirmar</button>
-      <button type="button" class="btn btn-outline" id="app-modal-cancel">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Contacto del desarrollador: se abre al tocar "Desarrollador: ..." en el footer -->
-<div class="app-modal-overlay" id="dev-contact-modal">
-  <div class="app-modal-box">
-    <div class="app-modal-title">Fabricio Liziardi</div>
-    <div class="app-modal-body">Desarrollador de este sitio.</div>
-    <div class="app-modal-actions">
-      <a class="btn btn-primary" id="dev-contact-whatsapp" href="#" target="_blank" rel="noopener" style="text-decoration:none;">WhatsApp</a>
-      <a class="btn btn-outline" id="dev-contact-instagram" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none;">Instagram</a>
-      <button type="button" class="btn btn-outline" id="dev-contact-close">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import {
-  SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL, LATERALIDADES, GENEROS,
-  TORNEO_GENEROS, getTorneoGeneroLabel, resolverGenerosPareja,
-  uid, generateBracket, propagateWinner, roundLabel, loadState, saveState, isAprobada,
-  resolverJugadorId, registrarResultadoPartido, getPuntosConfig, DEFAULT_PUNTOS_CONFIG, POSICION_LABELS,
-  isCategoriaSuma, getAllCategorias, getCategoriaLabel, getCategoriasSumaConfig,
-  RONDA_LABELS, RONDA_OPCIONES, getRondaLabel, getCupoInfo, suscribirseATorneo,
-  dispararNotificacion, authIdsDeJugadorIds, authIdsElegiblesParaTorneo,
-  DEV_WHATSAPP_URL, DEV_INSTAGRAM_URL
-} from './shared.js?v=19';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const app = document.getElementById('app');
-const toastEl = document.getElementById('toast');
-
-let state = null;
-let activeTorneoId = null;
-let activeTab = {};
-let currentSection = 'torneos';
-let partidosTorneoId = null;
-let jugadoresSearchQuery = '';
-let lastStateJson = '';
-let isSaving = false;
-let suscripcionTorneo = null; // ver initApp() — objeto que devuelve suscribirseATorneo (shared.js)
-
-function toast(msg){
-  toastEl.textContent = msg;
-  toastEl.classList.add('show');
-  setTimeout(()=>toastEl.classList.remove('show'), 1800);
+// Etiqueta de cualquier categoría (fija o Suma dinámica)
+export function getCategoriaLabel(state, codigo){
+  if(CATEGORIA_LABEL[codigo]) return CATEGORIA_LABEL[codigo];
+  const m = /^suma(\d+)$/.exec(codigo||'');
+  if(m) return `Suma ${m[1]}`;
+  return codigo || '';
 }
 
 // ============================================================
-// Modal genérico (reemplaza a confirm()/prompt() del navegador)
+// Configuración de puntuación (editable desde el panel de admin;
+// estos son los valores por defecto la primera vez)
 // ============================================================
-// Los cartelitos nativos del navegador (confirm/prompt) no se pueden
-// estilizar y desentonan con el resto del panel. Estas dos funciones abren
-// el mismo modal (#app-modal) pero con el diseño del sitio, y devuelven una
-// promesa — se usan con "await" en vez de llamar a confirm()/prompt()
-// directamente, tal cual quedaban antes.
-function _appModalBase({ titulo, mensaje, conInput, placeholder, valorInicial, textoOk, textoCancel, peligroso }){
-  return new Promise((resolve)=>{
-    const overlay = document.getElementById('app-modal');
-    const inputWrap = document.getElementById('app-modal-input-wrap');
-    const input = document.getElementById('app-modal-input');
-    const btnOk = document.getElementById('app-modal-ok');
-    const btnCancel = document.getElementById('app-modal-cancel');
-
-    document.getElementById('app-modal-title').textContent = titulo || '';
-    document.getElementById('app-modal-body').textContent = mensaje || '';
-    document.getElementById('app-modal-body').style.display = mensaje ? 'block' : 'none';
-
-    inputWrap.style.display = conInput ? 'block' : 'none';
-    input.value = valorInicial || '';
-    input.placeholder = placeholder || '';
-
-    btnOk.textContent = textoOk || (conInput ? 'Crear' : 'Confirmar');
-    btnOk.className = 'btn ' + (peligroso ? 'btn-danger' : 'btn-primary');
-    btnCancel.textContent = textoCancel || 'Cancelar';
-
-    function cerrar(valor){
-      overlay.classList.remove('open');
-      btnOk.onclick = null; btnCancel.onclick = null;
-      overlay.onclick = null;
-      document.removeEventListener('keydown', onKeyDown);
-      resolve(valor);
-    }
-    function onKeyDown(e){
-      if(e.key === 'Escape') cerrar(conInput ? null : false);
-      if(e.key === 'Enter' && conInput) cerrar(input.value.trim());
-    }
-
-    btnOk.onclick = ()=> cerrar(conInput ? input.value.trim() : true);
-    btnCancel.onclick = ()=> cerrar(conInput ? null : false);
-    overlay.onclick = (e)=>{ if(e.target === overlay) cerrar(conInput ? null : false); };
-    document.addEventListener('keydown', onKeyDown);
-
-    overlay.classList.add('open');
-    if(conInput) setTimeout(()=> input.focus(), 50);
-  });
-}
-
-// Reemplazo de confirm(mensaje) — devuelve true/false.
-function mostrarConfirmModal(mensaje, { titulo = 'Confirmar', textoOk, peligroso = false } = {}){
-  return _appModalBase({ titulo, mensaje, conInput: false, textoOk, peligroso });
-}
-
-// Reemplazo de prompt(mensaje) — devuelve el texto ingresado, o null si se
-// canceló (igual que prompt() nativo).
-function mostrarPromptModal(titulo, { placeholder = '', valorInicial = '', textoOk = 'Crear' } = {}){
-  return _appModalBase({ titulo, conInput: true, placeholder, valorInicial, textoOk });
-}
-
-// Dispara una notificación push sin bloquear ni romper el resto del flujo:
-// si falla (por ejemplo, la Edge Function todavía no está desplegada, o el
-// jugador nunca activó las notificaciones), solo lo dejamos en consola — el
-// guardado de los datos ya se hizo antes de llamar a esta función.
-//
-// Si el admin dispara dos avisos muy seguidos (por ejemplo, abre la
-// inscripción de un torneo mixto de 7ma y después la de un torneo de
-// cualquier género también de 7ma), sin ningún control las dos
-// notificaciones le llegarían al mismo jugador casi juntas — demasiada
-// información de golpe. Para evitarlo, todos los avisos pasan por una
-// cola: el primero sale ya mismo (como hasta ahora), pero si el siguiente
-// se dispara antes de que pase ESPERA_ENTRE_AVISOS_MS desde el anterior,
-// se espera lo que falta antes de mandarlo, así llegan de a uno.
-const ESPERA_ENTRE_AVISOS_MS = 30000; // mínimo 30s entre una notificación push y la siguiente
-let ultimoAvisoPushEn = 0;
-let colaAvisosPush = Promise.resolve();
-
-function avisarPush(authIds, titulo, cuerpo, url){
-  if(!authIds || authIds.length === 0) return;
-  colaAvisosPush = colaAvisosPush.then(async ()=>{
-    const espera = Math.max(0, (ultimoAvisoPushEn + ESPERA_ENTRE_AVISOS_MS) - Date.now());
-    if(espera > 0) await new Promise(r => setTimeout(r, espera));
-    ultimoAvisoPushEn = Date.now();
-    try{
-      await dispararNotificacion(supabase, { authIds, titulo, cuerpo, url: url || './index.html' });
-    }catch(err){
-      console.error('No se pudo enviar la notificación push:', err);
-    }
-  });
-}
-
-async function persist(){
-  isSaving = true;
-  try{
-    await saveState(supabase, state);
-    lastStateJson = JSON.stringify(state);
-    // Le avisamos a la suscripción que este guardado es "propio": Supabase
-    // también nos manda a nosotros el aviso en tiempo real de nuestro propio
-    // cambio (el "eco"), y sin esto se dispararía un re-render de más apenas
-    // llegue, aunque ya lo tengamos en pantalla.
-    if(suscripcionTorneo) suscripcionTorneo.marcarComoPropio(state);
-    toast('Guardado ✓');
-  }catch(e){
-    console.error(e);
-    toast('Error al guardar');
-  }finally{
-    isSaving = false;
-  }
-}
-
-function activeTorneo(){
-  return state.torneos.find(t=>t.id===activeTorneoId) || null;
-}
-
-// ---- RENDER GENERAL ----
-function render(){
-  const html = `
-    <div class="layout">
-      ${currentSection==='torneos' ? `<div class="sidebar show">
-        <h3>TORNEOS</h3>
-        <div id="torneo-list"></div>
-        <button class="btn btn-outline btn-block" id="btn-nuevo-torneo" style="margin-top:10px;">+ Nuevo torneo</button>
-      </div>` : '<div></div>'}
-      <div class="main">
-        <div id="section-torneos" class="section ${currentSection==='torneos'?'active':''}"></div>
-        <div id="section-partidos" class="section ${currentSection==='partidos'?'active':''}"></div>
-        <div id="section-jugadores" class="section ${currentSection==='jugadores'?'active':''}"></div>
-        <div id="section-config" class="section ${currentSection==='config'?'active':''}"></div>
-      </div>
-    </div>
-  `;
-  app.innerHTML = html;
-
-  // Botones de sección
-  document.querySelectorAll('.section-tab').forEach(btn=>{
-    btn.onclick = ()=>{
-      document.querySelectorAll('.section-tab').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      currentSection = btn.dataset.section;
-      render();
-    };
-  });
-
-  if(currentSection==='torneos'){
-    renderTorneosSection();
-  } else if(currentSection==='partidos'){
-    renderPartidosSection();
-  } else if(currentSection==='jugadores'){
-    renderJugadoresSection();
-  } else {
-    renderConfigSection();
-  }
-}
-
-// ---- SECCIÓN TORNEOS ----
-function renderTorneosSection(){
-  const t = activeTorneo();
-  const el = document.getElementById('section-torneos');
-
-  // Lista de torneos
-  const list = document.getElementById('torneo-list');
-  if(list){
-    list.innerHTML = '';
-    state.torneos.forEach(tr=>{
-      const div = document.createElement('div');
-      div.className = 'torneo-item' + (tr.id===activeTorneoId ? ' active' : '');
-      const totalParejas = Object.values(tr.parejas).reduce((a,arr)=>a+arr.length,0);
-      const generoTxt = tr.genero ? TORNEO_GENEROS[tr.genero] : 'sin género';
-      div.innerHTML = `${tr.nombre}<small>${tr.fecha} · ${totalParejas} parejas · ${generoTxt} ${tr.inscripcionAbierta ? '· <span style="color:var(--lime);">insc. abierta</span>' : '· <span style="color:var(--red);">insc. cerrada</span>'}</small>`;
-      div.onclick = ()=>{ activeTorneoId = tr.id; render(); };
-      list.appendChild(div);
-    });
-    document.getElementById('btn-nuevo-torneo').onclick = crearTorneo;
-  }
-
-  if(!t){
-    el.innerHTML = '<div class="panel"><div class="empty-state">Elegí un torneo o creá uno nuevo.</div></div>';
-    return;
-  }
-
-  el.innerHTML = renderTorneoPanel(t);
-  wireTorneoPanel(t);
-}
-
-function renderTorneoPanel(t){
-  const cupoInfo = getCupoInfo(t);
-  return `
-    <div class="panel">
-      <h2>Datos del torneo
-        <button class="btn btn-danger btn-sm" id="btn-borrar-torneo">Eliminar</button>
-      </h2>
-      <div class="grid-3">
-        <div class="field"><label>Nombre</label><input id="f-nombre" value="${escapeHtml(t.nombre)}"></div>
-        <div class="field"><label>Fecha</label><input id="f-fecha" value="${escapeHtml(t.fecha)}"></div>
-        <div class="field"><label>Lugar</label><input id="f-lugar" value="${escapeHtml(t.lugar)}"></div>
-      </div>
-      <label style="margin-top:14px;">Categorías</label>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        ${getAllCategorias(state).map(c=>`<div class="check-pill ${t.categorias.includes(c)?'active':''}" data-cat="${c}">${getCategoriaLabel(state,c)}</div>`).join('')}
-      </div>
-      <div style="color:var(--grey);font-size:0.72rem;margin-top:6px;">Las categorías "Suma" (Suma 11, Suma 14, etc.) se crean y administran desde la pestaña Configuración.</div>
-      <label style="margin-top:14px;">Cupo máximo de parejas</label>
-      <div class="field" style="max-width:220px;">
-        <input type="number" id="f-cupo" min="1" step="1" placeholder="Sin límite" value="${t.cupo || ''}">
-      </div>
-      <div style="color:var(--grey);font-size:0.78rem;margin-top:6px;">
-        ${cupoInfo
-          ? `${cupoInfo.ocupadas} de ${cupoInfo.cupo} parejas aprobadas (sumando todas las categorías de este torneo).${cupoInfo.lleno ? ' <b style="color:var(--red);">Cupo completo — no se puede inscribir nadie más hasta que se libere un lugar.</b>' : ''}`
-          : 'Dejalo vacío para no limitar la cantidad de parejas. Cuenta sólo las parejas ya aprobadas, sin importar en qué categoría jueguen.'}
-      </div>
-      <label style="margin-top:14px;">Género del torneo</label>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        ${Object.entries(TORNEO_GENEROS).map(([k,v])=>`<div class="check-pill ${t.genero===k?'active':''}" data-genero="${k}">${v}</div>`).join('')}
-      </div>
-      <div style="color:var(--grey);font-size:0.78rem;margin-top:8px;">
-        ${t.genero==='mixto'
-          ? 'Cada pareja tiene que tener un jugador y una jugadora.'
-          : t.genero
-            ? `Solo se van a poder anotar jugadores de género ${TORNEO_GENEROS[t.genero].toLowerCase()}.`
-            : '<span style="color:var(--red);">Sin género configurado — elegí uno para poder controlar quién se inscribe.</span>'}
-      </div>
-      <label style="margin-top:14px;">Inscripciones</label>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <div class="check-pill ${t.inscripcionAbierta ? 'active' : ''}" id="btn-insc-abierta">Abiertas</div>
-        <div class="check-pill ${!t.inscripcionAbierta ? 'active' : ''}" id="btn-insc-cerrada" style="${!t.inscripcionAbierta ? 'background:var(--red);color:#fff;border-color:var(--red);' : ''}">Cerradas</div>
-      </div>
-      <div style="color:var(--grey);font-size:0.78rem;margin-top:8px;">
-        ${t.inscripcionAbierta ? 'Las parejas van a poder inscribirse a este torneo desde la web pública.' : 'Este torneo no va a aparecer para inscribirse en la web pública.'}
-      </div>
-    </div>
-    ${renderPostulacionesPanel(t)}
-    <div class="panel">
-      <h2>Parejas y llave</h2>
-      ${t.categorias.length===0 ? '<div class="empty-state">Elegí al menos una categoría.</div>' : `
-        <div class="tabs" id="cat-tabs">
-          ${t.categorias.map(c=>`<div class="tab ${ (activeTab[t.id]||t.categorias[0])===c ? 'active':''}" data-cat="${c}">${getCategoriaLabel(state,c)}</div>`).join('')}
-        </div>
-        <div id="cat-content"></div>
-      `}
-    </div>
-  `;
-}
-
-function wireTorneoPanel(t){
-  document.getElementById('f-nombre').addEventListener('change', e=>{ t.nombre=e.target.value; persist(); render(); });
-  document.getElementById('f-fecha').addEventListener('change', e=>{ t.fecha=e.target.value; persist(); });
-  document.getElementById('f-lugar').addEventListener('change', e=>{ t.lugar=e.target.value; persist(); });
-  document.getElementById('f-cupo').addEventListener('change', e=>{
-    const val = parseInt(e.target.value, 10);
-    t.cupo = (val && val > 0) ? val : null;
-    persist(); render();
-  });
-
-  document.getElementById('btn-borrar-torneo').onclick = async ()=>{
-    const ok = await mostrarConfirmModal(
-      `¿Eliminar "${t.nombre}"?\n\nLos puntos de ranking y los partidos ganados/perdidos de los jugadores que ya jugaron en este torneo NO se pierden. Solo se borra el torneo (llave, parejas, partidos programados).`,
-      { titulo: 'Eliminar torneo', textoOk: 'Eliminar', peligroso: true }
-    );
-    if(!ok) return;
-    state.torneos = state.torneos.filter(x=>x.id!==t.id);
-    activeTorneoId = state.torneos[0]?.id || null;
-    persist(); render();
-  };
-
-  document.getElementById('btn-insc-abierta').onclick = ()=>{
-    const estabaCerrada = !t.inscripcionAbierta;
-    t.inscripcionAbierta = true; persist(); render();
-    // Avisamos "se abrió tu categoría" solo en la transición de cerrada a
-    // abierta (si ya estaba abierta y tocás el botón de nuevo, no se manda
-    // otra vez), y solo si ya se configuraron categorías.
-    if(estabaCerrada && t.categorias.length > 0){
-      avisarPush(
-        authIdsElegiblesParaTorneo(state, t),
-        '¡Nuevo torneo en tu categoría!',
-        `Se abrió la inscripción de "${t.nombre}". Anotate desde la web.`
-      );
-    }
-  };
-  document.getElementById('btn-insc-cerrada').onclick = ()=>{
-    t.inscripcionAbierta = false; persist(); render();
-  };
-
-  document.querySelectorAll('.check-pill[data-genero]').forEach(el=>{
-    el.onclick = async ()=>{
-      const nuevoGenero = el.dataset.genero;
-      if(nuevoGenero === t.genero) return;
-      const hayParejas = Object.values(t.parejas||{}).some(arr=>(arr||[]).length>0);
-      if(hayParejas && !(await mostrarConfirmModal('Ya hay parejas cargadas en este torneo. Cambiar el género no las va a validar retroactivamente ¿Continuar?', { titulo: 'Cambiar género' }))) return;
-      t.genero = nuevoGenero;
-      persist(); render();
-    };
-  });
-
-  document.querySelectorAll('.check-pill[data-cat]').forEach(el=>{
-    el.onclick = async ()=>{
-      const cat = el.dataset.cat;
-      if(t.categorias.includes(cat)){
-        if(!(await mostrarConfirmModal(`¿Quitar ${getCategoriaLabel(state,cat)}?`, { titulo: 'Quitar categoría', peligroso: true }))) return;
-        t.categorias = t.categorias.filter(c=>c!==cat);
-        delete t.parejas[cat]; delete t.brackets[cat];
-      } else {
-        t.categorias.push(cat);
-        t.parejas[cat] = []; t.brackets[cat] = null;
-      }
-      persist(); render();
-    };
-  });
-
-  wirePostulacionesPanel(t);
-
-  if(t.categorias.length>0){
-    const currentCat = activeTab[t.id] || t.categorias[0];
-    activeTab[t.id] = currentCat;
-    document.getElementById('cat-content').innerHTML = renderCategoriaContent(t, currentCat);
-    wireCategoriaContent(t, currentCat);
-
-    document.querySelectorAll('#cat-tabs .tab').forEach(el=>{
-      el.onclick = ()=>{ activeTab[t.id]=el.dataset.cat; render(); };
-    });
-  }
-}
-
-function categoriaRealJugador(jId){
-  const j = (state.jugadores||[]).find(x=>x.id===jId);
-  return j ? j.categoria : null;
-}
-
-function renderPostulacionesPanel(t){
-  // Recorremos TODAS las categorías del torneo, no solo la primera
-  const pendientes = [];
-  (t.categorias||[]).forEach(cat=>{
-    (t.parejas[cat]||[]).forEach(p=>{
-      if(p.estado==='pendiente') pendientes.push({...p, _cat: cat});
-    });
-  });
-
-  return `
-    <div class="panel">
-      <h2>Postulaciones pendientes ${pendientes.length ? `<span style="background:var(--red-dim);color:var(--red);font-size:0.7rem;font-weight:800;padding:5px 11px;border-radius:6px;">${pendientes.length}</span>` : ''}</h2>
-      ${pendientes.length===0 ? '<div class="empty-state">No hay postulaciones.</div>' :
-        pendientes.map(p=>{
-          const cat = p._cat;
-          const esSuma = isCategoriaSuma(cat);
-          let discrepanciaHtml = '';
-          if(esSuma && (p.cat_j1 || p.cat_j2)){
-            const realJ1 = categoriaRealJugador(p.j1_id);
-            const realJ2 = categoriaRealJugador(p.j2_id);
-            const mismatchJ1 = realJ1 && p.cat_j1 && realJ1 !== p.cat_j1;
-            const mismatchJ2 = realJ2 && p.cat_j2 && realJ2 !== p.cat_j2;
-            discrepanciaHtml = `
-              <div style="display:flex;gap:22px;flex-wrap:wrap;font-size:0.78rem;color:var(--grey);margin-top:4px;">
-                <span>${escapeHtml(p.j1)}: declaró <b style="color:var(--white);">${p.cat_j1?getCategoriaLabel(state,p.cat_j1):'—'}</b>
-                  ${mismatchJ1 ? ` <span style="color:var(--red);font-weight:700;">⚠ en la base figura ${getCategoriaLabel(state,realJ1)}</span>` : ''}
-                </span>
-                <span>${escapeHtml(p.j2)}: declaró <b style="color:var(--white);">${p.cat_j2?getCategoriaLabel(state,p.cat_j2):'—'}</b>
-                  ${mismatchJ2 ? ` <span style="color:var(--red);font-weight:700;">⚠ en la base figura ${getCategoriaLabel(state,realJ2)}</span>` : ''}
-                </span>
-              </div>
-            `;
-          } else if(!esSuma){
-            // Categoría normal (no Suma): comparamos la categoría del torneo al
-            // que se anotaron contra la categoría real que cada jugador tiene
-            // cargada en la base de jugadores.
-            const realJ1 = categoriaRealJugador(p.j1_id);
-            const realJ2 = categoriaRealJugador(p.j2_id);
-            const mismatchJ1 = realJ1 && realJ1 !== cat;
-            const mismatchJ2 = realJ2 && realJ2 !== cat;
-            if(mismatchJ1 || mismatchJ2){
-              discrepanciaHtml = `
-                <div style="display:flex;gap:22px;flex-wrap:wrap;font-size:0.78rem;color:var(--grey);margin-top:4px;">
-                  ${mismatchJ1 ? `<span>${escapeHtml(p.j1)}: <span style="color:var(--red);font-weight:700;">⚠ en la base figura ${getCategoriaLabel(state,realJ1)}, se anotó en ${getCategoriaLabel(state,cat)}</span></span>` : ''}
-                  ${mismatchJ2 ? `<span>${escapeHtml(p.j2)}: <span style="color:var(--red);font-weight:700;">⚠ en la base figura ${getCategoriaLabel(state,realJ2)}, se anotó en ${getCategoriaLabel(state,cat)}</span></span>` : ''}
-                </div>
-              `;
-            }
-          }
-          return `
-            <div class="pareja-row" style="flex-direction:column;align-items:stretch;gap:4px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-                <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}<span style="color:var(--grey);font-size:0.78rem;"> — ${getCategoriaLabel(state,cat)}</span></span>
-                <span style="display:flex;gap:6px;">
-                  <button class="btn btn-primary btn-sm" data-aprobar="${cat}:${p.id}">Aprobar</button>
-                  <button class="btn btn-danger btn-sm" data-rechazar="${cat}:${p.id}">Rechazar</button>
-                </span>
-              </div>
-              ${discrepanciaHtml}
-            </div>
-          `;
-        }).join('')
-      }
-    </div>
-  `;
-}
-
-function wirePostulacionesPanel(t){
-  document.querySelectorAll('[data-aprobar]').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const [cat, id] = btn.dataset.aprobar.split(':');
-      const p = (t.parejas[cat]||[]).find(x=>x.id===id);
-      if(!p) return;
-      const cupoInfo = getCupoInfo(t);
-      if(cupoInfo && cupoInfo.lleno){
-        const ok = await mostrarConfirmModal(`Este torneo ya llegó a su cupo de ${cupoInfo.cupo} parejas. ¿Aprobar igual?`, { titulo: 'Cupo completo' });
-        if(!ok) return;
-      }
-      p.estado = 'aprobada'; persist(); render();
-      avisarPush(
-        authIdsDeJugadorIds(state, [p.j1_id, p.j2_id]),
-        '¡Pareja aprobada!',
-        `Tu pareja para ${getCategoriaLabel(state,cat)} en "${t.nombre}" fue aprobada.`
-      );
-    };
-  });
-  document.querySelectorAll('[data-rechazar]').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const [cat, id] = btn.dataset.rechazar.split(':');
-      const ok = await mostrarConfirmModal('¿Rechazar?', { titulo: 'Rechazar postulación', textoOk: 'Rechazar', peligroso: true });
-      if(!ok) return;
-      const p = (t.parejas[cat]||[]).find(x=>x.id===id);
-      t.parejas[cat] = (t.parejas[cat]||[]).filter(x=>x.id!==id);
-      persist(); render();
-      if(p){
-        avisarPush(
-          authIdsDeJugadorIds(state, [p.j1_id, p.j2_id]),
-          'Postulación rechazada',
-          `Tu postulación para ${getCategoriaLabel(state,cat)} en "${t.nombre}" fue rechazada.`
-        );
-      }
-    };
-  });
-}
-
-function renderCategoriaContent(t, cat){
-  const parejas = (t.parejas[cat] || []).filter(isAprobada);
-  const bracket = t.brackets[cat];
-  const esSuma = isCategoriaSuma(cat);
-  return `
-    <div class="grid-2" style="align-items:start;">
-      <div>
-        <label>Parejas (${parejas.length})</label>
-        <div id="parejas-list">
-          ${parejas.length===0 ? '<div class="empty-state">Sin parejas.</div>' :
-            parejas.map(p=>`
-              <div class="pareja-row">
-                <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}
-                  ${esSuma && (p.cat_j1||p.cat_j2) ? `<span style="display:block;color:var(--grey);font-weight:500;font-size:0.74rem;">${p.cat_j1?getCategoriaLabel(state,p.cat_j1):'?'} + ${p.cat_j2?getCategoriaLabel(state,p.cat_j2):'?'}</span>` : ''}
-                </span>
-                <span class="x" data-remove="${p.id}">✕</span>
-              </div>
-            `).join('')
-          }
-        </div>
-        <div class="add-pareja-form">
-          <input id="new-j1" placeholder="Jugador 1" list="jugadores-datalist" autocomplete="off">
-          <input id="new-j2" placeholder="Jugador 2" list="jugadores-datalist" autocomplete="off">
-          ${esSuma ? `
-            <select id="new-j1-cat" title="Categoría de Jugador 1">${CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('')}</select>
-            <select id="new-j2-cat" title="Categoría de Jugador 2">${CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('')}</select>
-          ` : ''}
-          ${t.genero==='mixto' ? `
-            <select id="new-j1-genero" title="Género de Jugador 1">
-              <option value="masculino">Jugador 1: Masculino</option>
-              <option value="femenino">Jugador 1: Femenino</option>
-            </select>
-            <select id="new-j2-genero" title="Género de Jugador 2">
-              <option value="femenino">Jugador 2: Femenino</option>
-              <option value="masculino">Jugador 2: Masculino</option>
-            </select>
-          ` : ''}
-          <button class="btn btn-primary btn-sm" id="btn-add-pareja">+ Agregar</button>
-        </div>
-        <datalist id="jugadores-datalist">
-          ${(state.jugadores || []).map(j=>`<option value="${escapeHtml(j.nombre)}"></option>`).join('')}
-        </datalist>
-        <div style="color:var(--grey);font-size:0.72rem;margin-top:4px;">Si el jugador ya está registrado, empezá a escribir su nombre y elegilo de la lista para no duplicarlo.${esSuma ? ' Elegí también la categoría individual de cada jugador.' : ''}${t.genero==='mixto' ? ' Elegí también el género de cada jugador (uno tiene que ser Masculino y el otro Femenino).' : t.genero ? ` Este torneo es ${TORNEO_GENEROS[t.genero].toLowerCase()}: los dos jugadores tienen que ser de ese género.` : ''}</div>
-        <button class="btn btn-outline btn-block" id="btn-generar-llave" style="margin-top:16px;" ${parejas.length<2?'disabled':''}>
-          ${bracket ? 'Regenerar llave' : 'Generar llave'}
-        </button>
-      </div>
-      <div>
-        <label>Llave — ${getCategoriaLabel(state,cat)}</label>
-        ${ bracket
-            ? '<div class="bracket-wrap"><div class="bracket" id="bracket-view"></div></div>'
-            : (parejas.length === 0
-                ? '<div class="empty-state">Todavía no hay parejas cargadas.</div>'
-                : `
-                  <div style="color:var(--grey);font-size:0.78rem;margin-bottom:10px;">Zona de grupos — parejas cargadas, esperando a que se genere la llave:</div>
-                  ${parejas.map(p=>`<div class="pareja-row"><span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}</span></div>`).join('')}
-                `)
-          }
-      </div>
-    </div>
-  `;
-}
-
-function wireCategoriaContent(t, cat){
-  document.querySelectorAll('[data-remove]').forEach(el=>{
-    el.onclick = ()=>{
-      t.parejas[cat] = t.parejas[cat].filter(p=>p.id!==el.dataset.remove);
-      persist(); render();
-    };
-  });
-
-  document.getElementById('btn-add-pareja').onclick = ()=>{
-    const j1 = document.getElementById('new-j1').value.trim();
-    const j2 = document.getElementById('new-j2').value.trim();
-    if(!j1 || !j2){ toast('Completá los nombres'); return; }
-    const esSuma = isCategoriaSuma(cat);
-    const catJ1El = document.getElementById('new-j1-cat');
-    const catJ2El = document.getElementById('new-j2-cat');
-    const cat_j1 = esSuma ? catJ1El.value : null;
-    const cat_j2 = esSuma ? catJ2El.value : null;
-
-    const generoJ1El = document.getElementById('new-j1-genero');
-    const generoJ2El = document.getElementById('new-j2-genero');
-    const { generoJ1, generoJ2, error: errorGenero } = resolverGenerosPareja(
-      t.genero, generoJ1El ? generoJ1El.value : null, generoJ2El ? generoJ2El.value : null
-    );
-    if(errorGenero){ toast(errorGenero); return; }
-
-    // Para Suma, cada jugador se resuelve con su propia categoría (no con la del torneo)
-    const r1 = resolverJugadorId(state, j1, esSuma ? cat_j1 : cat, generoJ1);
-    if(r1.error){ toast(r1.error); return; }
-    const r2 = resolverJugadorId(state, j2, esSuma ? cat_j2 : cat, generoJ2);
-    if(r2.error){ toast(r2.error); return; }
-
-    const nuevaPareja = { id: uid('p'), j1_id: r1.id, j2_id: r2.id, j1, j2, telefono:'', estado:'aprobada' };
-    if(esSuma){ nuevaPareja.cat_j1 = cat_j1; nuevaPareja.cat_j2 = cat_j2; }
-    t.parejas[cat].push(nuevaPareja);
-    persist(); render();
-  };
-
-  const btnGenerar = document.getElementById('btn-generar-llave');
-  if(btnGenerar){
-    btnGenerar.onclick = async ()=>{
-      if(t.brackets[cat] && !(await mostrarConfirmModal('¿Reiniciar la llave de esta categoría?', { titulo: 'Reiniciar llave', textoOk: 'Reiniciar', peligroso: true }))) return;
-      t.brackets[cat] = generateBracket(t.parejas[cat]);
-      persist(); render();
-    };
-  }
-
-  if(t.brackets[cat]) renderBracketView(t, cat);
-}
-
-function teamLabel(team){
-  if(!team) return '<span style="color:var(--grey);">Por definir</span>';
-  if(team.bye) return '<span style="color:var(--grey);font-style:italic;">BYE</span>';
-  return `${escapeHtml(team.j1)} / ${escapeHtml(team.j2)}`;
-}
-
-function renderBracketView(t, cat){
-  const rounds = t.brackets[cat];
-  const wrap = document.getElementById('bracket-view');
-  wrap.innerHTML = '';
-  rounds.forEach((round, ri)=>{
-    const roundEl = document.createElement('div');
-    roundEl.className = 'round';
-    const lab = document.createElement('div');
-    lab.className = 'round-label';
-    lab.textContent = roundLabel(ri, rounds.length);
-    roundEl.appendChild(lab);
-
-    round.forEach((match, mi)=>{
-      const matchEl = document.createElement('div');
-      matchEl.className = 'match';
-      const canDecide = match.teamA && match.teamB && !match.teamA.bye && !match.teamB.bye && !match.winner;
-      const decided = !!match.winner;
-
-      const sideClass = team => {
-        if(!team) return 'tbd';
-        if(team.bye) return 'bye';
-        if(decided && team.id===match.winner?.id) return 'winner';
-        return '';
-      };
-
-      matchEl.innerHTML = `
-        <div class="side ${sideClass(match.teamA)}">
-          <span>${teamLabel(match.teamA)}</span>
-          ${canDecide ? `<button class="win-btn" data-round="${ri}" data-match="${mi}" data-side="A">Ganó</button>` : ''}
-        </div>
-        <div class="side ${sideClass(match.teamB)}">
-          <span>${teamLabel(match.teamB)}</span>
-          ${canDecide ? `<button class="win-btn" data-round="${ri}" data-match="${mi}" data-side="B">Ganó</button>` : ''}
-        </div>
-        ${decided ? `<div class="decided-tag">Definido ✓</div>` : ''}
-      `;
-      roundEl.appendChild(matchEl);
-    });
-    wrap.appendChild(roundEl);
-  });
-
-  wrap.querySelectorAll('.win-btn').forEach(btn=>{
-    btn.onclick = ()=>{
-      const ri = parseInt(btn.dataset.round), mi = parseInt(btn.dataset.match);
-      const match = rounds[ri][mi];
-      const winner = btn.dataset.side==='A' ? match.teamA : match.teamB;
-      const loser = btn.dataset.side==='A' ? match.teamB : match.teamA;
-      propagateWinner(rounds, ri, mi, winner);
-      // Sumar puntos de ranking según la posición alcanzada (configurable), y
-      // dejar registro permanente del partido ganado/perdido para cada jugador
-      registrarResultadoPartido(state, t.id, t.nombre, cat, rounds, ri, mi, winner, loser);
-      persist(); render();
-    };
-  });
-}
-
-async function crearTorneo(){
-  const nombre = await mostrarPromptModal('Nombre del torneo', { placeholder: 'Ej: Apertura Marzo', textoOk: 'Crear' });
-  if(!nombre) return;
-  const nuevo = {
-    // Arranca con la inscripción CERRADA a propósito: así, cuando el admin
-    // termine de configurar categorías/género y recién ahí toque "Abiertas",
-    // se dispara de verdad la notificación de "nuevo torneo en tu categoría"
-    // (si ya arrancara abierto, ese primer click nunca pasaría de cerrado a
-    // abierto, y la notificación no se mandaría nunca).
-    id: uid('t'), nombre, fecha:'', lugar:'', estado:'abierto', inscripcionAbierta: false,
-    // Arranca SIN género configurado a propósito: así el panel muestra el
-    // aviso "Sin género configurado" hasta que el admin lo elija a mano. Si
-    // acá pusiéramos un valor por defecto (como antes 'masculino'), un
-    // torneo femenino creado sin tocar la pastilla de género se quedaría
-    // con ese valor por defecto sin que nada lo avise, y las notificaciones
-    // de "nuevo torneo en tu categoría" se mandarían al género equivocado.
-    genero: null,
-    categorias: [], parejas:{}, brackets:{}, partidos: [], cupo: null
-  };
-  state.torneos.push(nuevo);
-  activeTorneoId = nuevo.id;
-  persist(); render();
-}
-
-// ---- PANEL: PRÓXIMOS PARTIDOS (fecha/hora/cancha para mostrar en la web pública) ----
-function formatFechaCorta(fecha){
-  if(!fecha) return '';
-  const [y,m,d] = fecha.split('-').map(Number);
-  if(!y||!m||!d) return fecha;
-  return `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
-}
-
-// ---- SECCIÓN PARTIDOS ----
-function renderPartidosSection(){
-  const el = document.getElementById('section-partidos');
-  if(!state.torneos || state.torneos.length===0){
-    el.innerHTML = `<div class="panel"><h2>Partidos</h2><div class="empty-state">Todavía no hay torneos creados.</div></div>`;
-    return;
-  }
-  if(!partidosTorneoId || !state.torneos.find(x=>x.id===partidosTorneoId)){
-    partidosTorneoId = state.torneos[0].id;
-  }
-  const t = state.torneos.find(x=>x.id===partidosTorneoId);
-  el.innerHTML = `
-    <div class="panel">
-      <h2>Programar partidos</h2>
-      <div class="field" style="max-width:420px;">
-        <label>Torneo</label>
-        <select id="pp-torneo">
-          ${state.torneos.map(tr=>`<option value="${tr.id}" ${tr.id===t.id?'selected':''}>${escapeHtml(tr.nombre)}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    ${renderPartidosPanel(t)}
-  `;
-  document.getElementById('pp-torneo').onchange = (e)=>{
-    partidosTorneoId = e.target.value;
-    render();
-  };
-  wirePartidosPanel(t);
-}
-
-function renderPartidosPanel(t){
-  if(!t.categorias || t.categorias.length===0){
-    return `<div class="panel"><h2>Próximos partidos</h2><div class="empty-state">Agregá al menos una categoría para poder programar partidos.</div></div>`;
-  }
-  const partidos = (t.partidos || []).slice().sort((a,b)=> (a.fecha+a.hora).localeCompare(b.fecha+b.hora));
-  return `
-    <div class="panel">
-      <h2>Próximos partidos</h2>
-      <div class="grid-3" style="margin-bottom:14px;">
-        <div class="field"><label>Categoría</label><select id="pp-cat">${t.categorias.map(c=>`<option value="${c}">${getCategoriaLabel(state,c)}</option>`).join('')}</select></div>
-        <div class="field"><label>Pareja A</label><select id="pp-a"></select></div>
-        <div class="field"><label>Pareja B</label><select id="pp-b"></select></div>
-      </div>
-      <div class="grid-3" style="margin-bottom:14px;">
-        <div class="field"><label>Fecha</label><input type="date" id="pp-fecha"></div>
-        <div class="field"><label>Hora</label><input type="time" id="pp-hora"></div>
-        <div class="field"><label>Cancha</label><input id="pp-cancha" placeholder="Cancha 1"></div>
-      </div>
-      <div class="field" style="max-width:280px;margin-bottom:14px;">
-        <label>Ronda (opcional)</label>
-        <select id="pp-ronda">
-          <option value="">Sin ronda</option>
-          ${RONDA_OPCIONES.map(r=>`<option value="${r}">${RONDA_LABELS[r]}</option>`).join('')}
-        </select>
-      </div>
-      <button class="btn btn-primary btn-block" id="btn-add-partido" style="margin-bottom:18px;">+ Programar partido</button>
-      <label>Partidos programados (${partidos.length})</label>
-      <div id="partidos-list">
-        ${partidos.length===0 ? '<div class="empty-state">Todavía no hay partidos programados.</div>' :
-          partidos.map(p=>`
-            <div class="pareja-row">
-              <span class="nombre">
-                <span style="color:var(--lime);font-weight:800;">${getCategoriaLabel(state,p.categoria)}</span>
-                ${p.ronda ? `<span style="color:var(--grey);font-weight:700;"> · ${getRondaLabel(p.ronda)}</span>` : ''}
-                — ${escapeHtml(p.equipoA)} vs ${escapeHtml(p.equipoB)}
-                <span style="display:block;color:var(--grey);font-size:0.78rem;font-weight:500;">${formatFechaCorta(p.fecha)}${p.hora?` — ${p.hora}`:''}${p.cancha?` · ${escapeHtml(p.cancha)}`:''}</span>
-              </span>
-              <span class="x" data-remove-partido="${p.id}">✕</span>
-            </div>
-          `).join('')
-        }
-      </div>
-    </div>
-  `;
-}
-
-function wirePartidosPanel(t){
-  const selCat = document.getElementById('pp-cat');
-  if(!selCat) return; // no hay categorías todavía
-
-  const selA = document.getElementById('pp-a');
-  const selB = document.getElementById('pp-b');
-
-  function refreshParejaOptions(){
-    const cat = selCat.value;
-    const parejas = (t.parejas[cat] || []).filter(isAprobada);
-    const opts = parejas.map(p=>`<option value="${p.id}">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}</option>`).join('');
-    selA.innerHTML = opts || '<option value="">Sin parejas aprobadas</option>';
-    selB.innerHTML = opts || '<option value="">Sin parejas aprobadas</option>';
-  }
-  refreshParejaOptions();
-  selCat.onchange = refreshParejaOptions;
-
-  document.getElementById('btn-add-partido').onclick = ()=>{
-    const cat = selCat.value;
-    const parejas = (t.parejas[cat] || []).filter(isAprobada);
-    const pA = parejas.find(p=>p.id===selA.value);
-    const pB = parejas.find(p=>p.id===selB.value);
-    const fecha = document.getElementById('pp-fecha').value;
-    const hora = document.getElementById('pp-hora').value;
-    const cancha = document.getElementById('pp-cancha').value.trim();
-    const ronda = document.getElementById('pp-ronda').value;
-    if(!pA || !pB){ toast('Elegí las dos parejas'); return; }
-    if(pA.id === pB.id){ toast('Elegí dos parejas distintas'); return; }
-    if(!fecha){ toast('Elegí una fecha'); return; }
-    t.partidos = t.partidos || [];
-    t.partidos.push({
-      id: uid('partido'), categoria: cat,
-      equipoA: `${pA.j1} / ${pA.j2}`, equipoB: `${pB.j1} / ${pB.j2}`,
-      fecha, hora, cancha, ronda, jugado: false
-    });
-    persist(); render();
-  };
-
-  document.querySelectorAll('[data-remove-partido]').forEach(el=>{
-    el.onclick = ()=>{
-      t.partidos = (t.partidos || []).filter(p=>p.id !== el.dataset.removePartido);
-      persist(); render();
-    };
-  });
-}
-
-// ---- SECCIÓN CONFIGURACIÓN ----
-function renderConfigSection(){
-  const el = document.getElementById('section-config');
-  if(!state.config) state.config = { puntos: {...DEFAULT_PUNTOS_CONFIG} };
-  if(!state.config.puntos) state.config.puntos = {...DEFAULT_PUNTOS_CONFIG};
-  const p = state.config.puntos;
-
-  const sumaActuales = getCategoriasSumaConfig(state);
-
-  el.innerHTML = `
-    <div class="panel">
-      <h2>Categorías "Suma"</h2>
-      <p style="color:var(--grey);font-size:0.85rem;margin-bottom:18px;max-width:60ch;">
-        Creá las categorías Suma que necesites (Suma 5, Suma 11, Suma 14, Suma 16, la que sea).
-        La categoría de la pareja sale de sumar la categoría individual de cada jugador. Una vez creadas,
-        vas a poder tildarlas como cualquier otra categoría al armar un torneo.
-      </p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-        ${sumaActuales.length===0 ? '<div class="empty-state">Todavía no creaste ninguna.</div>' :
-          sumaActuales.map(n=>`
-            <div class="check-pill active" style="display:flex;align-items:center;gap:8px;">
-              Suma ${n}
-              <span class="x" data-quitar-suma="${n}" style="cursor:pointer;">✕</span>
-            </div>
-          `).join('')
-        }
-      </div>
-      <div style="display:flex;gap:10px;max-width:320px;">
-        <input type="number" min="2" step="1" id="nueva-suma" placeholder="Ej: 16">
-        <button class="btn btn-primary btn-sm" id="btn-agregar-suma">+ Agregar</button>
-      </div>
-    </div>
-    <div class="panel">
-      <h2>Puntos de ranking por posición final</h2>
-      <p style="color:var(--grey);font-size:0.85rem;margin-bottom:18px;max-width:60ch;">
-        Definí cuántos puntos recibe cada jugador de la pareja según cómo terminó el torneo.
-        Se suman solos al marcar "Ganó" en la llave: el que pierde queda eliminado en esa
-        instancia y el campeón se define al cerrar la final.
-      </p>
-      <div class="grid-3">
-        ${Object.keys(POSICION_LABELS).map(key=>`
-          <div class="field">
-            <label>${POSICION_LABELS[key]}</label>
-            <input type="number" min="0" step="1" id="cfg-${key}" value="${p[key] ?? DEFAULT_PUNTOS_CONFIG[key] ?? 0}">
-          </div>
-        `).join('')}
-      </div>
-      <div style="margin-top:18px;">
-        <button class="btn btn-primary" id="btn-guardar-config">Guardar configuración</button>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('btn-guardar-config').onclick = ()=>{
-    Object.keys(POSICION_LABELS).forEach(key=>{
-      const val = parseInt(document.getElementById('cfg-'+key).value, 10);
-      p[key] = isNaN(val) ? 0 : val;
-    });
-    persist();
-  };
-
-  document.getElementById('btn-agregar-suma').onclick = ()=>{
-    const input = document.getElementById('nueva-suma');
-    const n = parseInt(input.value, 10);
-    if(!n || n<2){ toast('Ingresá un número válido'); return; }
-    state.config.categoriasSuma = state.config.categoriasSuma || [];
-    if(state.config.categoriasSuma.includes(n)){ toast(`Suma ${n} ya existe`); return; }
-    state.config.categoriasSuma.push(n);
-    persist(); render();
-  };
-
-  document.querySelectorAll('[data-quitar-suma]').forEach(el=>{
-    el.onclick = async ()=>{
-      const n = parseInt(el.dataset.quitarSuma, 10);
-      const code = 'suma' + n;
-      const enUso = state.torneos.some(t=>(t.categorias||[]).includes(code));
-      if(enUso){ toast(`Suma ${n} está en uso en algún torneo, no se puede quitar`); return; }
-      const ok = await mostrarConfirmModal(`¿Quitar Suma ${n}?`, { titulo: 'Quitar categoría Suma', peligroso: true });
-      if(!ok) return;
-      state.config.categoriasSuma = (state.config.categoriasSuma||[]).filter(x=>x!==n);
-      persist(); render();
-    };
-  });
-}
-
-// ---- SECCIÓN JUGADORES ----
-function renderJugadoresSection(){
-  const el = document.getElementById('section-jugadores');
-  el.innerHTML = `
-    <div class="panel">
-      <h2>Gestión de Jugadores <span style="color:var(--grey);font-weight:500;font-size:0.8rem;">(${(state.jugadores||[]).length})</span>
-        <button class="btn btn-primary btn-sm" id="btn-nuevo-jugador">+ Nuevo Jugador</button>
-      </h2>
-      <div class="field" style="margin-bottom:14px;">
-        <label>Buscar jugador</label>
-        <input id="jugadores-search" placeholder="Escribí un nombre..." value="${escapeHtml(jugadoresSearchQuery)}">
-      </div>
-      <div class="add-jugador-form" id="add-jugador-form" style="display:none;">
-        <input id="new-jug-nombre" placeholder="Nombre y apellido">
-        <select id="new-jug-cat">
-          ${CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('')}
-        </select>
-        <select id="new-jug-genero">
-          ${Object.entries(GENEROS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
-        </select>
-        <select id="new-jug-lat">
-          ${Object.entries(LATERALIDADES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
-        </select>
-        <button class="btn btn-primary btn-sm" id="btn-guardar-nuevo-jugador">Guardar</button>
-        <button class="btn btn-outline btn-sm" id="btn-cancelar-nuevo-jugador">Cancelar</button>
-      </div>
-      <div id="jugadores-list"></div>
-    </div>
-  `;
-
-  const list = document.getElementById('jugadores-list');
-  const query = jugadoresSearchQuery.trim().toLowerCase();
-  const jugadoresFiltrados = (state.jugadores || []).filter(j =>
-    !query || (j.nombre || '').toLowerCase().includes(query)
-  );
-
-  if(!state.jugadores || state.jugadores.length===0){
-    list.innerHTML = '<div class="empty-state">Sin jugadores aún.</div>';
-  } else if(jugadoresFiltrados.length===0){
-    list.innerHTML = `<div class="empty-state">No hay jugadores que coincidan con "${escapeHtml(jugadoresSearchQuery)}".</div>`;
-  } else {
-    list.innerHTML = jugadoresFiltrados.map(j=>{
-      // Suma TODOS los puntos del historial (no solo los de su categoría fija), porque
-      // puede haber sumado puntos jugando en una categoría distinta a la suya propia.
-      const puntos = (j.historial||[]).reduce((s,h)=>s+(h.puntos_ganados||0),0);
-      return `
-      <div class="jugador-row">
-        <div style="display:flex;gap:10px;align-items:center;flex:1;">
-          <div class="foto-preview ${j.foto?'':'empty'}" id="foto-${j.id}">
-            ${j.foto ? `<img src="${j.foto}" alt="${j.nombre}">` : '📷'}
-          </div>
-          <div>
-            <div class="nombre">${escapeHtml(j.nombre)}</div>
-            <div style="font-size:0.75rem;color:var(--grey);">${CATEGORIA_LABEL[j.categoria] || j.categoria} · ${j.genero ? (GENEROS[j.genero]||j.genero) : '<span style="color:var(--red);">Sin género</span>'} · ${LATERALIDADES[j.lateralidad] || j.lateralidad} · <span style="color:var(--lime);font-weight:700;">${puntos} pts</span></div>
-          </div>
-        </div>
-        <span style="display:flex;gap:6px;">
-          <button class="btn btn-outline btn-sm" data-edit="${j.id}">Editar</button>
-          <button class="btn btn-danger btn-sm" data-delete="${j.id}">Borrar</button>
-        </span>
-      </div>`;
-    }).join('');
-  }
-
-  const searchInput = document.getElementById('jugadores-search');
-  searchInput.oninput = ()=>{
-    jugadoresSearchQuery = searchInput.value;
-    const cursorPos = searchInput.selectionStart;
-    renderJugadoresSection();
-    const newInput = document.getElementById('jugadores-search');
-    newInput.focus();
-    newInput.setSelectionRange(cursorPos, cursorPos);
-  };
-
-  const formEl = document.getElementById('add-jugador-form');
-
-  document.getElementById('btn-nuevo-jugador').onclick = ()=>{
-    formEl.style.display = formEl.style.display==='none' ? 'flex' : 'none';
-    if(formEl.style.display==='flex') document.getElementById('new-jug-nombre').focus();
-  };
-
-  document.getElementById('btn-cancelar-nuevo-jugador').onclick = ()=>{
-    formEl.style.display = 'none';
-  };
-
-  document.getElementById('btn-guardar-nuevo-jugador').onclick = crearJugador;
-  document.getElementById('new-jug-nombre').addEventListener('keydown', e=>{
-    if(e.key==='Enter'){ e.preventDefault(); crearJugador(); }
-  });
-
-  document.querySelectorAll('[data-edit]').forEach(btn=>{
-    btn.onclick = ()=>editarJugador(btn.dataset.edit);
-  });
-
-  document.querySelectorAll('[data-delete]').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const ok = await mostrarConfirmModal('¿Borrar jugador?', { titulo: 'Borrar jugador', textoOk: 'Borrar', peligroso: true });
-      if(!ok) return;
-      state.jugadores = state.jugadores.filter(j=>j.id!==btn.dataset.delete);
-      persist(); render();
-    };
-  });
-}
-
-function crearJugador(){
-  const nombre = document.getElementById('new-jug-nombre').value.trim();
-  if(!nombre){ toast('Ingresá un nombre'); return; }
-  const categoria = document.getElementById('new-jug-cat').value;
-  const genero = document.getElementById('new-jug-genero').value;
-  const lateralidad = document.getElementById('new-jug-lat').value;
-  state.jugadores = state.jugadores || [];
-  state.jugadores.push({
-    id: uid('j'), nombre, lateralidad, genero, categoria, foto:'', historial:[]
-  });
-  persist(); render();
-}
-
-function editarJugador(jId){
-  const j = state.jugadores.find(x=>x.id===jId);
-  if(!j) return;
-
-  const html = `
-    <div class="panel">
-      <h2>Editar Jugador
-        <button class="btn btn-outline btn-sm" id="btn-close-edit">Cerrar</button>
-      </h2>
-      <div class="grid-2">
-        <div>
-          <div class="field"><label>Nombre</label><input id="edit-nombre" value="${escapeHtml(j.nombre)}"></div>
-          <div class="field"><label>Categoría</label><select id="edit-cat">
-            ${CATEGORIAS.map(c=>`<option value="${c}" ${c===j.categoria?'selected':''}>${CATEGORIA_LABEL[c]}</option>`).join('')}
-          </select></div>
-          <div class="field"><label>Género</label><select id="edit-genero">
-            ${Object.entries(GENEROS).map(([k,v])=>`<option value="${k}" ${k===j.genero?'selected':''}>${v}</option>`).join('')}
-          </select></div>
-          <div class="field"><label>Lateralidad</label><select id="edit-lat">
-            ${Object.entries(LATERALIDADES).map(([k,v])=>`<option value="${k}" ${k===j.lateralidad?'selected':''}>${v}</option>`).join('')}
-          </select></div>
-        </div>
-        <div>
-          <label>Foto</label>
-          <div class="foto-preview" id="preview-foto" style="margin-bottom:10px;">
-            ${j.foto ? `<img src="${j.foto}" alt="">` : '📷 Sin foto'}
-          </div>
-          <input type="file" id="file-foto" class="file-input" accept="image/*">
-          <button class="btn btn-outline btn-block btn-sm" id="btn-upload-foto">Subir foto</button>
-        </div>
-      </div>
-      <div style="margin-top:16px;">
-        <button class="btn btn-primary" id="btn-save-jugador">Guardar</button>
-      </div>
-    </div>
-    <div class="panel">
-      <h2>Historial de puntos</h2>
-      ${ (j.historial && j.historial.length) ? `
-        <div id="historial-list">
-          ${j.historial.slice().reverse().map(h=>{
-            const torneo = state.torneos.find(x=>x.id===h.torneoId);
-            let companero = h.companero;
-            if(companero === undefined){
-              const pareja = torneo ? (torneo.parejas[h.categoria] || []).find(p=>p.id===h.parejaId) : null;
-              companero = pareja ? (pareja.j1_id === j.id ? pareja.j2 : pareja.j1) : null;
-            }
-            return `
-              <div class="pareja-row">
-                <span class="nombre">${torneo ? escapeHtml(torneo.nombre) : 'Torneo eliminado'}
-                  <span style="color:var(--grey);font-size:0.78rem;font-weight:500;"> — ${getCategoriaLabel(state,h.categoria)} · ${POSICION_LABELS[h.posicion] || h.posicion || ''}${companero ? ` · con ${escapeHtml(companero)}` : ''}</span>
-                </span>
-                <span style="color:var(--lime);font-weight:800;flex-shrink:0;">+${h.puntos_ganados} pts</span>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      ` : '<div class="empty-state">Todavía no sumó puntos en ningún torneo.</div>' }
-    </div>
-  `;
-
-  const el = document.getElementById('section-jugadores');
-  el.innerHTML = html;
-
-  document.getElementById('btn-close-edit').onclick = ()=>render();
-  document.getElementById('btn-upload-foto').onclick = ()=>document.getElementById('file-foto').click();
-
-  document.getElementById('file-foto').onchange = (e)=>{
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev)=>{
-      j.foto = ev.target.result;
-      document.getElementById('preview-foto').innerHTML = `<img src="${j.foto}" alt="">`;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  document.getElementById('btn-save-jugador').onclick = ()=>{
-    j.nombre = document.getElementById('edit-nombre').value;
-    j.categoria = document.getElementById('edit-cat').value;
-    j.genero = document.getElementById('edit-genero').value;
-    j.lateralidad = document.getElementById('edit-lat').value;
-    persist(); render();
-  };
-}
-
-// ---- FUNCIONES UTILITARIAS ----
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-// Se llama cuando llega un cambio real (por Supabase Realtime, o por el
-// chequeo de respaldo — ver suscribirseATorneo en shared.js). Si justo
-// estamos a mitad de un guardado propio (isSaving), lo ignoramos: cuando
-// termine ese guardado, persist() ya deja todo consistente por su cuenta.
-function aplicarNuevoStateAdmin(nuevoState){
-  if(isSaving) return;
-  state = nuevoState;
-  lastStateJson = JSON.stringify(nuevoState);
-  render();
-}
-
-// ---- INIT (datos del panel, se llama recién después de loguearse) ----
-async function initApp(){
-  try{
-    state = await loadState(supabase);
-    if(!state.jugadores) state.jugadores = [];
-    lastStateJson = JSON.stringify(state);
-    activeTorneoId = state.torneos[0]?.id || null;
-    render();
-    suscripcionTorneo = suscribirseATorneo(supabase, aplicarNuevoStateAdmin, { estadoInicial: state });
-  }catch(e){
-    console.error(e);
-    app.innerHTML = `<div class="panel"><div class="empty-state">Error conectando con la base de datos.</div></div>`;
-  }
-}
-
-// ---- AUTENTICACIÓN ----
-const loginScreen = document.getElementById('login-screen');
-const adminPanel = document.getElementById('admin-panel');
-const loginForm = document.getElementById('login-form');
-const loginError = document.getElementById('login-error');
-const loginBtn = document.getElementById('login-btn');
-
-let appStarted = false;
-
-function showLogin(){
-  loginScreen.style.display = 'flex';
-  adminPanel.style.display = 'none';
-}
-
-function showAdmin(){
-  loginScreen.style.display = 'none';
-  adminPanel.style.display = 'block';
-  if(!appStarted){
-    appStarted = true;
-    initApp();
-  }
-}
-
-// Un usuario sólo puede entrar al panel si su id figura en la tabla
-// "admins" (lista blanca que se carga a mano por SQL, ver setup.sql).
-// Esto es lo que evita que cualquier jugador que se creó una cuenta en
-// la web pública pueda entrar acá.
-async function esAdmin(userId){
-  const { data, error } = await supabase.from('admins').select('id').eq('id', userId).maybeSingle();
-  if(error){ console.error(error); return false; }
-  return !!data;
-}
-
-loginForm.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  loginError.textContent = '';
-  loginBtn.disabled = true;
-  loginBtn.textContent = 'Ingresando…';
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if(error){
-    loginBtn.disabled = false;
-    loginBtn.textContent = 'Ingresar';
-    loginError.textContent = 'Email o contraseña incorrectos.';
-    return;
-  }
-  if(!(await esAdmin(data.user.id))){
-    await supabase.auth.signOut();
-    loginBtn.disabled = false;
-    loginBtn.textContent = 'Ingresar';
-    loginError.textContent = 'Esta cuenta no tiene permisos de administrador.';
-    return;
-  }
-  loginBtn.disabled = false;
-  loginBtn.textContent = 'Ingresar';
-  showAdmin();
-});
-
-document.getElementById('btn-logout').onclick = async ()=>{
-  await supabase.auth.signOut();
-  location.reload();
+export const DEFAULT_PUNTOS_CONFIG = {
+  campeon: 100,
+  subcampeon: 60,
+  semifinal: 30,
+  cuartos: 15,
+  octavos: 5,
+  dieciseisavos: 2,
 };
 
-// ---- Contacto del desarrollador (footer) ----
-(function wireDevContactModal(){
-  const btn = document.getElementById('btn-footer-dev');
-  const modal = document.getElementById('dev-contact-modal');
-  if(!btn || !modal) return;
-  const closeBtn = document.getElementById('dev-contact-close');
-  const waLink = document.getElementById('dev-contact-whatsapp');
-  const igLink = document.getElementById('dev-contact-instagram');
-  waLink.href = DEV_WHATSAPP_URL;
-  if(DEV_INSTAGRAM_URL){
-    igLink.href = DEV_INSTAGRAM_URL;
-    igLink.style.display = 'flex';
-  }
-  btn.onclick = ()=> modal.classList.add('open');
-  closeBtn.onclick = ()=> modal.classList.remove('open');
-  modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); });
-})();
+export const POSICION_LABELS = {
+  campeon: 'Campeón',
+  subcampeon: 'Subcampeón',
+  semifinal: 'Semifinalista',
+  cuartos: 'Cuartos de final',
+  octavos: 'Octavos de final',
+  dieciseisavos: '16vos de final',
+};
 
-supabase.auth.onAuthStateChange((event)=>{
-  if(event === 'SIGNED_OUT'){
-    showLogin();
-  }
-});
+// ============================================================
+// Lateralidad
+// ============================================================
+export const LATERALIDADES = { 'diestro': 'Diestro', 'zurdo': 'Zurdo' };
 
-(async function checkSession(){
-  const { data: { session } } = await supabase.auth.getSession();
-  if(session && await esAdmin(session.user.id)){
-    showAdmin();
-  }else{
-    if(session) await supabase.auth.signOut(); // sesión de jugador sin permisos, no de admin
-    showLogin();
-  }
-})();
-</script>
+// ============================================================
+// Género (para diferenciar el ranking masculino del femenino)
+// ============================================================
+export const GENEROS = { 'masculino': 'Masculino', 'femenino': 'Femenino' };
 
-</body>
-</html>
+// ============================================================
+// Género de TORNEO (a diferencia del género de un jugador, un torneo
+// puede ser masculino, femenino o mixto). Esto determina qué jugadores
+// se pueden inscribir en él:
+//   - masculino/femenino: las dos personas de la pareja tienen que ser
+//     de ese género.
+//   - mixto: la pareja tiene que tener un jugador y una jugadora.
+// ============================================================
+export const TORNEO_GENEROS = { 'masculino': 'Masculino', 'femenino': 'Femenino', 'mixto': 'Mixto' };
+
+export function getTorneoGeneroLabel(codigo){
+  return TORNEO_GENEROS[codigo] || '';
+}
+
+// ============================================================
+// Contacto del desarrollador (se muestra en un minipanel al tocar
+// "Desarrollador: ..." en el pie de página de index.html, ranking.html
+// y admin.html). Si DEV_INSTAGRAM_URL queda vacío, el botón de Instagram
+// del minipanel no se muestra — completalo acá cuando lo tengas.
+// ============================================================
+export const DEV_NOMBRE = 'Fabricio Liziardi';
+export const DEV_WHATSAPP_URL = 'https://wa.me/5492657392878';
+export const DEV_INSTAGRAM_URL = ''; // ej: 'https://instagram.com/tu_usuario'
+
+// ============================================================
+// Ronda de un partido programado ("próximos partidos"). Es un dato
+// que carga el admin a mano al programar el partido, para mostrar
+// en la web pública (ej: "Octavos de Final").
+// ============================================================
+export const RONDA_LABELS = {
+  grupos: 'Fase de Grupos',
+  dieciseisavos: '16vos de Final',
+  octavos: 'Octavos de Final',
+  cuartos: 'Cuartos de Final',
+  semifinal: 'Semifinal',
+  final: 'Final',
+};
+export const RONDA_OPCIONES = Object.keys(RONDA_LABELS);
+export function getRondaLabel(codigo){
+  return RONDA_LABELS[codigo] || '';
+}
+
+// ============================================================
+// Utilidades
+// ============================================================
+export function uid(prefix='id'){
+  return prefix + '_' + Math.random().toString(36).slice(2,10);
+}
+
+// Una pareja sin campo "estado" se considera aprobada (compatibilidad con datos viejos)
+export function isAprobada(p){
+  return (p.estado || 'aprobada') === 'aprobada';
+}
+
+// Une el nombre escrito en una pareja con un registro real de la tabla de
+// jugadores: si ya existe alguien con ese nombre lo reutiliza, si no lo crea.
+// Así toda pareja (inscripta desde la web o cargada por el admin) queda
+// vinculada a jugadores reales que después aparecen en "Jugadores" y suman
+// puntos de ranking.
+//
+// Si se pasa "generoEsperado" (porque el torneo exige un género puntual para
+// esta persona), se valida contra el género ya guardado del jugador:
+//   - Si el jugador ya existe y su género no coincide -> devuelve error y NO
+//     crea/modifica nada, para no mezclar categorías masculinas/femeninas.
+//   - Si el jugador ya existe pero no tenía género cargado (dato viejo) -> se
+//     completa con el esperado.
+//   - Si el jugador es nuevo -> se crea con ese género.
+// Devuelve { id, error }. Si error no es null, "id" es null y no hay que usarlo.
+export function resolverJugadorId(state, nombre, categoria, generoEsperado){
+  const nombreNorm = (nombre || '').trim();
+  if(!nombreNorm) return { id: null, error: null };
+  state.jugadores = state.jugadores || [];
+  let jugador = state.jugadores.find(j => (j.nombre||'').trim().toLowerCase() === nombreNorm.toLowerCase());
+  if(!jugador){
+    jugador = { id: uid('j'), nombre: nombreNorm, lateralidad:'diestro', genero: generoEsperado || '', categoria, foto:'', historial:[] };
+    state.jugadores.push(jugador);
+    return { id: jugador.id, error: null };
+  }
+  if(generoEsperado){
+    if(jugador.genero && jugador.genero !== generoEsperado){
+      return {
+        id: null,
+        error: `${jugador.nombre} ya está registrado como ${GENEROS[jugador.genero] || jugador.genero}, no puede anotarse como ${GENEROS[generoEsperado] || generoEsperado}.`
+      };
+    }
+    if(!jugador.genero) jugador.genero = generoEsperado;
+  }
+  return { id: jugador.id, error: null };
+}
+
+// Dado el género configurado en el torneo, calcula qué género le corresponde
+// a cada integrante de la pareja:
+//   - "masculino"/"femenino": los dos tienen que ser de ese género (no hace
+//     falta elegir nada en el formulario).
+//   - "mixto": hay que elegir el género de cada uno (generoSelJ1/J2) y tienen
+//     que ser distintos entre sí (un jugador y una jugadora).
+//   - sin configurar (torneos viejos): no se exige nada.
+// Devuelve { generoJ1, generoJ2, error }.
+export function resolverGenerosPareja(torneoGenero, generoSelJ1, generoSelJ2){
+  if(torneoGenero === 'masculino') return { generoJ1: 'masculino', generoJ2: 'masculino', error: null };
+  if(torneoGenero === 'femenino') return { generoJ1: 'femenino', generoJ2: 'femenino', error: null };
+  if(torneoGenero === 'mixto'){
+    if(!generoSelJ1 || !generoSelJ2) return { generoJ1: null, generoJ2: null, error: 'Elegí el género de cada jugador.' };
+    if(generoSelJ1 === generoSelJ2) return { generoJ1: null, generoJ2: null, error: 'En un torneo Mixto la pareja tiene que tener un jugador y una jugadora.' };
+    return { generoJ1: generoSelJ1, generoJ2: generoSelJ2, error: null };
+  }
+  return { generoJ1: null, generoJ2: null, error: null };
+}
+
+// ============================================================
+// Cuentas de jugadores (Supabase Auth + tabla "profiles")
+// ============================================================
+// Cada jugador se crea su propia cuenta (email + contraseña) con sus datos:
+// nombre, teléfono, categoría, mano hábil y género. Esta info NO vive en el
+// documento JSON de "torneos" sino en la tabla "profiles" de Supabase, ligada
+// 1 a 1 con auth.users. Ver setup.sql para la creación de esta tabla, sus
+// políticas de RLS, y la función buscar_jugadores usada para elegir compañero.
+
+export async function crearCuentaJugador(supabase, { email, password, nombre, telefono, categoria, lateralidad, genero }) {
+  const { data, error } = await supabase.auth.signUp({
+    email, password,
+    options: { data: { nombre, telefono, categoria, lateralidad, genero } }
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function iniciarSesionJugador(supabase, email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data;
+}
+
+export async function cerrarSesionJugador(supabase) {
+  await supabase.auth.signOut();
+}
+
+export async function obtenerMiPerfil(supabase, userId) {
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+// Trae el perfil de la cuenta logueada. Si por algún motivo la fila en
+// "profiles" no se creó sola al registrarse (por ejemplo, si la cuenta se
+// creó antes de correr setup.sql, o el trigger no llegó a dispararse), la
+// arma acá mismo con los datos que quedaron guardados en la cuenta de
+// Supabase Auth (user_metadata), en vez de dejar a la persona sin perfil
+// para siempre.
+export async function asegurarMiPerfil(supabase, user) {
+  let perfil = await obtenerMiPerfil(supabase, user.id);
+  if (perfil) return perfil;
+
+  const meta = user.user_metadata || {};
+  const { error } = await supabase.from('profiles').upsert({
+    id: user.id,
+    nombre: meta.nombre || user.email || '',
+    telefono: meta.telefono || '',
+    categoria: meta.categoria || '',
+    lateralidad: meta.lateralidad || 'diestro',
+    genero: meta.genero || '',
+  });
+  if (error) throw error;
+  return await obtenerMiPerfil(supabase, user.id);
+}
+
+// Busca jugadores YA REGISTRADOS (con cuenta) por nombre, para elegir compañero
+// de pareja al inscribirse. Usa la función RPC "buscar_jugadores" (ver setup.sql),
+// que sólo expone nombre/categoría/género/lateralidad (no email ni teléfono de
+// terceros).
+export async function buscarJugadoresRegistrados(supabase, texto) {
+  const limpio = (texto || '').trim();
+  if (limpio.length < 2) return [];
+  const { data, error } = await supabase.rpc('buscar_jugadores', { busqueda: limpio });
+  if (error) throw error;
+  return data || [];
+}
+
+// Vincula (o crea) la entrada correspondiente en state.jugadores para un
+// perfil de cuenta ya registrado, marcándola con authId para que quede
+// asociada de forma estable a esa cuenta (y no sólo por nombre). El perfil
+// de la cuenta es la fuente de verdad: si ya existía un jugador con ese
+// nombre (cargado antes a mano por el admin), se actualiza con los datos
+// del perfil y se le pega el authId.
+export function resolverJugadorDesdePerfil(state, perfil) {
+  state.jugadores = state.jugadores || [];
+  let jugador = state.jugadores.find(j => j.authId === perfil.id);
+  if (!jugador) {
+    jugador = state.jugadores.find(j => (j.nombre || '').trim().toLowerCase() === (perfil.nombre || '').trim().toLowerCase() && !j.authId);
+  }
+  if (jugador) {
+    jugador.authId = perfil.id;
+    jugador.nombre = perfil.nombre;
+    jugador.lateralidad = perfil.lateralidad || jugador.lateralidad;
+    jugador.genero = perfil.genero || jugador.genero;
+    jugador.categoria = perfil.categoria || jugador.categoria;
+    return { id: jugador.id };
+  }
+  jugador = {
+    id: uid('j'), authId: perfil.id, nombre: perfil.nombre,
+    lateralidad: perfil.lateralidad || 'diestro', genero: perfil.genero || '',
+    categoria: perfil.categoria || '', foto: '', historial: []
+  };
+  state.jugadores.push(jugador);
+  return { id: jugador.id };
+}
+
+// Busca (sin crear nada) el jugador de state.jugadores vinculado a un perfil
+// de cuenta, para saber si esa cuenta ya está anotada en algún torneo. Usa el
+// authId si ya quedó vinculado (por haberse inscripto alguna vez desde la
+// web); si no, intenta por nombre como respaldo (por si el admin lo cargó a
+// mano en un torneo antes de que esa persona se creara la cuenta).
+export function encontrarJugadorIdPorPerfil(state, perfil){
+  if(!perfil) return null;
+  const jugadores = state.jugadores || [];
+  const porAuth = jugadores.find(j => j.authId === perfil.id);
+  if(porAuth) return porAuth.id;
+  const porNombre = jugadores.find(j => (j.nombre||'').trim().toLowerCase() === (perfil.nombre||'').trim().toLowerCase());
+  return porNombre ? porNombre.id : null;
+}
+
+// ============================================================
+// Selector con menú desplegable propio (reemplazo visual de <select>)
+// ============================================================
+// En mobile, un <select> nativo abre el picker del sistema operativo (la
+// rueda de Android/iOS), que no se puede ni animar ni estilizar. Esta
+// función arma, al lado de un <select> ya existente, un menú propio animado
+// que muestra las mismas opciones — el <select> original se oculta pero
+// sigue existiendo en el DOM: ahí sigue viviendo el valor real, y el resto
+// del código sigue funcionando exactamente igual (leyendo selectEl.value,
+// escuchando selectEl.addEventListener('change', ...), etc.).
+//
+// Se llama de nuevo cada vez que cambian las <option> del select (por
+// ejemplo, después de reconstruir su innerHTML), para que el menú visual se
+// mantenga sincronizado.
+let _customSelectListenerGlobal = false;
+
+function _cerrarSelectorCustom(wrap){
+  wrap.classList.remove('open');
+  const btn = wrap.querySelector('.custom-select-btn');
+  if(btn) btn.setAttribute('aria-expanded', 'false');
+}
+function _abrirSelectorCustom(wrap){
+  document.querySelectorAll('.custom-select.open').forEach(w => { if(w !== wrap) _cerrarSelectorCustom(w); });
+  wrap.classList.add('open');
+  const btn = wrap.querySelector('.custom-select-btn');
+  if(btn) btn.setAttribute('aria-expanded', 'true');
+}
+
+export function actualizarSelectorCustom(selectEl){
+  if(!selectEl) return;
+  selectEl.style.display = 'none';
+  selectEl.setAttribute('aria-hidden', 'true');
+  selectEl.tabIndex = -1;
+
+  let wrap = selectEl.nextElementSibling;
+  if(!wrap || !wrap.classList || !wrap.classList.contains('custom-select-generated')){
+    wrap = document.createElement('div');
+    wrap.className = 'custom-select custom-select-generated';
+    wrap.innerHTML = `
+      <button type="button" class="custom-select-btn" aria-haspopup="listbox" aria-expanded="false">
+        <span class="custom-select-label">Elegí una opción</span>
+        <svg class="custom-select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="custom-select-panel" role="listbox"></div>
+    `;
+    selectEl.insertAdjacentElement('afterend', wrap);
+
+    wrap.querySelector('.custom-select-btn').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      wrap.classList.contains('open') ? _cerrarSelectorCustom(wrap) : _abrirSelectorCustom(wrap);
+    });
+
+    if(!_customSelectListenerGlobal){
+      document.addEventListener('click', (e)=>{
+        document.querySelectorAll('.custom-select.open').forEach(w=>{
+          if(!w.contains(e.target)) _cerrarSelectorCustom(w);
+        });
+      });
+      _customSelectListenerGlobal = true;
+    }
+  }
+
+  const panel = wrap.querySelector('.custom-select-panel');
+  const label = wrap.querySelector('.custom-select-label');
+  const opciones = Array.from(selectEl.options);
+
+  panel.innerHTML = opciones.map(o =>
+    `<div class="custom-select-option${o.value === selectEl.value ? ' active' : ''}" data-value="${o.value}" role="option">${o.textContent}</div>`
+  ).join('');
+  const actual = opciones.find(o => o.value === selectEl.value);
+  label.textContent = actual ? actual.textContent : 'Elegí una opción';
+
+  panel.querySelectorAll('.custom-select-option').forEach(opt=>{
+    opt.onclick = ()=>{
+      label.textContent = opt.textContent;
+      panel.querySelectorAll('.custom-select-option').forEach(o => o.classList.toggle('active', o === opt));
+      if(opt.dataset.value !== selectEl.value){
+        selectEl.value = opt.dataset.value;
+        selectEl.dispatchEvent(new Event('change'));
+      }
+      _cerrarSelectorCustom(wrap);
+    };
+  });
+}
+
+// ============================================================
+// Revelado al scrollear ("la página se va construyendo")
+// ============================================================
+// Cualquier elemento con clase "reveal" arranca invisible/corrido, y cuando
+// entra en pantalla se le agrega "reveal-visible" (clase que dispara la
+// transición suave, definida en el CSS de cada página) — sin escuchar el
+// evento scroll a mano, con IntersectionObserver. Una vez revelado, se deja
+// de observar (no vuelve a ocultarse si subís de nuevo).
+let _revealObserver = null;
+function _getRevealObserver(){
+  if(!_revealObserver){
+    _revealObserver = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){
+          entry.target.classList.add('reveal-visible');
+          _revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  }
+  return _revealObserver;
+}
+export function activarReveal(contenedor){
+  const observer = _getRevealObserver();
+  (contenedor || document).querySelectorAll('.reveal:not(.reveal-visible)').forEach(el => observer.observe(el));
+}
+
+// Cupo máximo de parejas para todo el torneo (no por categoría, según se
+// definió). Cuenta sólo las parejas ya APROBADAS, sumando entre todas las
+// categorías del torneo — las pendientes de revisión todavía no ocupan lugar.
+export function contarParejasAprobadas(t){
+  return Object.values(t.parejas || {}).reduce((acc, lista) => acc + (lista || []).filter(isAprobada).length, 0);
+}
+
+export function getCupoInfo(t){
+  const cupo = t.cupo;
+  if(!cupo || cupo <= 0) return null;
+  const ocupadas = contarParejasAprobadas(t);
+  const disponibles = Math.max(0, cupo - ocupadas);
+  return { cupo, ocupadas, disponibles, lleno: ocupadas >= cupo };
+}
+
+// ============================================================
+// Datos de ejemplo (se cargan una sola vez, si la base está vacía)
+// ============================================================
+export function seedDemoData(){
+  // Jugadores individuales
+  const jugadores = [
+    {id:uid('j'), nombre:'Fabricio Gonzalez', lateralidad:'diestro', genero:'masculino', categoria:'7ma', foto:'', historial:[]},
+    {id:uid('j'), nombre:'Juan Martinez', lateralidad:'zurdo', genero:'masculino', categoria:'7ma', foto:'', historial:[]},
+    {id:uid('j'), nombre:'Martín López', lateralidad:'diestro', genero:'masculino', categoria:'7ma', foto:'', historial:[]},
+    {id:uid('j'), nombre:'Lucas Fernández', lateralidad:'diestro', genero:'masculino', categoria:'7ma', foto:'', historial:[]},
+    {id:uid('j'), nombre:'Nico Ruiz', lateralidad:'zurdo', genero:'masculino', categoria:'7ma', foto:'', historial:[]},
+    {id:uid('j'), nombre:'Fede García', lateralidad:'diestro', genero:'masculino', categoria:'7ma', foto:'', historial:[]},
+    {id:uid('j'), nombre:'Tomi Sánchez', lateralidad:'diestro', genero:'masculino', categoria:'7ma', foto:'', historial:[]},
+    {id:uid('j'), nombre:'Santi Pérez', lateralidad:'zurdo', genero:'masculino', categoria:'7ma', foto:'', historial:[]},
+  ];
+
+  const parejas7ma = [
+    {id:uid('p'), j1_id:jugadores[0].id, j2_id:jugadores[1].id, j1:jugadores[0].nombre, j2:jugadores[1].nombre, telefono:'', estado:'aprobada'},
+    {id:uid('p'), j1_id:jugadores[2].id, j2_id:jugadores[3].id, j1:jugadores[2].nombre, j2:jugadores[3].nombre, telefono:'', estado:'aprobada'},
+    {id:uid('p'), j1_id:jugadores[4].id, j2_id:jugadores[5].id, j1:jugadores[4].nombre, j2:jugadores[5].nombre, telefono:'', estado:'aprobada'},
+    {id:uid('p'), j1_id:jugadores[6].id, j2_id:jugadores[7].id, j1:jugadores[6].nombre, j2:jugadores[7].nombre, telefono:'', estado:'aprobada'},
+  ];
+
+  const torneo = {
+    id: uid('t'),
+    nombre: 'Apertura Marzo',
+    fecha: '14 al 22 de Marzo',
+    lugar: 'Padel Club Norte',
+    estado: 'curso',
+    inscripcionAbierta: false,
+    genero: 'masculino',
+    categorias: ['7ma','6ta','5ta'],
+    parejas: { '7ma': parejas7ma, '6ta': [], '5ta': [] },
+    brackets: { '7ma': null, '6ta': null, '5ta': null },
+    partidos: [
+      {
+        id: uid('partido'), categoria: '7ma',
+        equipoA: `${parejas7ma[0].j1} / ${parejas7ma[0].j2}`,
+        equipoB: `${parejas7ma[1].j1} / ${parejas7ma[1].j2}`,
+        fecha: '2026-05-18', hora: '16:00', cancha: 'Cancha 2', jugado: false
+      },
+      {
+        id: uid('partido'), categoria: '7ma',
+        equipoA: `${parejas7ma[2].j1} / ${parejas7ma[2].j2}`,
+        equipoB: `${parejas7ma[3].j1} / ${parejas7ma[3].j2}`,
+        fecha: '2026-05-18', hora: '18:30', cancha: 'Cancha 1', jugado: false
+      }
+    ]
+  };
+  torneo.brackets['7ma'] = generateBracket(torneo.parejas['7ma']);
+
+  const otros = [
+    { nombre:'Copa Otoño', fecha:'04 de Abril', lugar:'Reja Sur Pádel', categorias:['4ta','6ta'] },
+    { nombre:'Torneo Amistad', fecha:'25 de Abril', lugar:'Club Atlético Oeste', categorias:['5ta','7ma'] },
+    { nombre:'Nocturno de Mayo', fecha:'16 de Mayo', lugar:'Padel Indoor Centro', categorias:['3ra','5ta'] },
+  ].map(t=>({
+    id: uid('t'), nombre:t.nombre, fecha:t.fecha, lugar:t.lugar, estado:'abierto',
+    inscripcionAbierta: true,
+    genero: 'masculino',
+    categorias:t.categorias,
+    parejas: Object.fromEntries(t.categorias.map(c=>[c,[]])),
+    brackets: Object.fromEntries(t.categorias.map(c=>[c,null])),
+    partidos: [],
+  }));
+
+  return { torneos: [torneo, ...otros], jugadores, config: { puntos: {...DEFAULT_PUNTOS_CONFIG}, categoriasSuma: [...DEFAULT_CATEGORIAS_SUMA] } };
+}
+
+// ============================================================
+// Generación de llaves (bracket de eliminación directa)
+// ============================================================
+function nextPow2(n){ let p=1; while(p<n) p*=2; return p; }
+
+function seedOrder(size){
+  let seeds=[1];
+  while(seeds.length<size){
+    const l = seeds.length*2;
+    const next=[];
+    seeds.forEach(s=>{ next.push(s); next.push(l+1-s); });
+    seeds = next;
+  }
+  return seeds;
+}
+
+export function generateBracket(parejas){
+  // Filtrar solo parejas aprobadas
+  const aprobadas = parejas.filter(isAprobada);
+  const n = aprobadas.length;
+  if(n < 2) return null;
+  const size = nextPow2(n);
+  const order = seedOrder(size);
+  const slots = order.map(seed => seed<=n ? {...aprobadas[seed-1], seed} : {bye:true, seed});
+
+  const round0 = [];
+  for(let i=0;i<slots.length;i+=2){
+    const teamA = slots[i], teamB = slots[i+1];
+    let winner = null;
+    if(teamA.bye && !teamB.bye) winner = teamB;
+    else if(teamB.bye && !teamA.bye) winner = teamA;
+    round0.push({ teamA, teamB, winner });
+  }
+
+  const rounds = [round0];
+  let current = round0;
+  while(current.length > 1){
+    const next = [];
+    for(let i=0;i<current.length;i+=2){
+      next.push({ teamA: current[i].winner || null, teamB: current[i+1].winner || null, winner:null });
+    }
+    rounds.push(next);
+    current = next;
+  }
+  return rounds;
+}
+
+export function propagateWinner(rounds, roundIdx, matchIdx, winner){
+  rounds[roundIdx][matchIdx].winner = winner;
+  if(roundIdx+1 < rounds.length){
+    const nextMatchIdx = Math.floor(matchIdx/2);
+    const slot = matchIdx % 2 === 0 ? 'teamA' : 'teamB';
+    rounds[roundIdx+1][nextMatchIdx][slot] = winner;
+    // si al asignar se completa un cruce donde el otro lado ya tenía bye, no aplica (los byes solo viven en ronda 0)
+  }
+}
+
+// ============================================================
+// Funciones para ranking y puntuación
+// ============================================================
+export function calcularRankingPorCategoria(jugadores, categoria, genero){
+  // Mostramos a cualquier jugador que haya sumado puntos en esta categoría según su
+  // historial, sin depender de su categoría individual fija. Esto es clave porque en
+  // una pareja los dos integrantes pueden tener categorías propias distintas (uno de
+  // 6ta jugando con uno de 7ma, por ejemplo): antes, al filtrar por j.categoria, el
+  // jugador cuya categoría propia no coincidía con la del torneo quedaba afuera del
+  // ranking aunque sí hubiera sumado los puntos.
+  let jugadoresCat = jugadores.filter(j => (j.historial||[]).some(h=>h.categoria===categoria));
+  if(genero){
+    jugadoresCat = jugadoresCat.filter(j=>j.genero===genero);
+  }
+  const ranking = jugadoresCat.map(j=>{
+    const puntos = (j.historial || [])
+      .filter(h=>h.categoria===categoria)
+      .reduce((sum,h)=>sum+(h.puntos_ganados||0), 0);
+    return {...j, puntos};
+  }).sort((a,b)=>b.puntos - a.puntos);
+  return ranking.map((j,i)=>({...j, puesto: i+1}));
+}
+
+export function getPuntosConfig(state){
+  return { ...DEFAULT_PUNTOS_CONFIG, ...(state.config && state.config.puntos ? state.config.puntos : {}) };
+}
+
+// Recorre el historial PERMANENTE de partidos del jugador (independiente de
+// que el torneo siga existiendo o se haya borrado — ver registrarPartidoJugado).
+export function getJugadorPartidosStats(state, jugadorId){
+  const jugador = (state.jugadores || []).find(j=>j.id===jugadorId);
+  const historial = jugador?.historialPartidos || [];
+  const ganados = historial.filter(h=>h.resultado==='ganado').length;
+  const perdidos = historial.filter(h=>h.resultado==='perdido').length;
+  return { ganados, perdidos };
+}
+
+// Guarda, para cada integrante de la pareja ganadora y la perdedora, un
+// registro PERMANENTE del resultado de ese partido (con el nombre del rival
+// y del torneo ya "congelados" en el registro). A diferencia de antes, esto
+// no depende de que el torneo siga existiendo: si más adelante se borra el
+// torneo, el jugador no pierde su cuenta de partidos ganados/perdidos.
+// "matchKey" identifica unívocamente el cruce (torneo+categoría+ronda+índice)
+// para no duplicar el registro si se llama más de una vez sobre el mismo
+// partido (por ejemplo, al migrar datos cargados con una versión anterior).
+function registrarPartidoJugado(state, matchKey, torneoId, torneoNombre, categoria, teamGanador, teamPerdedor){
+  const registrar = (team, rivalTeam, resultado) => {
+    if(!team || team.bye) return;
+    [team.j1_id, team.j2_id].forEach(jId=>{
+      if(!jId) return;
+      const jugador = state.jugadores.find(j=>j.id===jId);
+      if(!jugador) return;
+      jugador.historialPartidos = jugador.historialPartidos || [];
+      if(jugador.historialPartidos.some(h=>h.matchKey===matchKey)) return; // ya registrado
+      const rival = (rivalTeam && !rivalTeam.bye) ? `${rivalTeam.j1} / ${rivalTeam.j2}` : null;
+      jugador.historialPartidos.push({
+        matchKey, torneoId, torneoNombre, categoria, resultado, rival, fecha: new Date().toISOString()
+      });
+    });
+  };
+  registrar(teamGanador, teamPerdedor, 'ganado');
+  registrar(teamPerdedor, teamGanador, 'perdido');
+}
+
+// Recorre todos los torneos y "rellena" el historial permanente de partidos
+// de cada jugador con los cruces que ya estaban definidos pero que se
+// jugaron antes de que existiera este historial (o que por algún motivo no
+// quedaron registrados). Es seguro llamarla repetidas veces: registrarPartidoJugado
+// no duplica un mismo partido gracias a matchKey.
+function backfillHistorialPartidos(state){
+  (state.torneos || []).forEach(t=>{
+    Object.entries(t.brackets || {}).forEach(([categoria, rounds])=>{
+      if(!rounds) return;
+      rounds.forEach((round, ri)=>{
+        round.forEach((match, mi)=>{
+          const { teamA, teamB, winner } = match;
+          if(!teamA || !teamB || teamA.bye || teamB.bye || !winner) return;
+          const loser = winner.id === teamA.id ? teamB : teamA;
+          const matchKey = `${t.id}::${categoria}::${ri}::${mi}`;
+          registrarPartidoJugado(state, matchKey, t.id, t.nombre, categoria, winner, loser);
+        });
+      });
+    });
+  });
+}
+
+function awardPoints(state, torneoId, torneoNombre, categoria, parejaId, puntos, posicion){
+  if(!puntos) return;
+  const torneo = state.torneos.find(t=>t.id===torneoId);
+  if(!torneo) return;
+  const pareja = (torneo.parejas[categoria]||[]).find(p=>p.id===parejaId);
+  if(!pareja || pareja.bye) return;
+
+  [pareja.j1_id, pareja.j2_id].forEach(jId=>{
+    if(!jId) return;
+    const jugador = state.jugadores.find(j=>j.id===jId);
+    if(jugador){
+      // Guardamos el nombre del compañero y del torneo directamente en el historial
+      // (y no solo los ids) para que quede fijo aunque más adelante se borre o
+      // edite esa pareja, o incluso se borre el torneo entero.
+      const companero = (pareja.j1_id === jId) ? pareja.j2 : pareja.j1;
+      const companeroId = (pareja.j1_id === jId) ? pareja.j2_id : pareja.j1_id;
+      jugador.historial = jugador.historial || [];
+      jugador.historial.push({
+        torneoId, torneoNombre, categoria, parejaId, puntos_ganados: puntos, posicion, fecha: new Date().toISOString(),
+        companero: companero || null, companeroId: companeroId || null
+      });
+    }
+  });
+}
+
+// Se llama cada vez que se define el ganador de un cruce en la llave.
+// El PERDEDOR de ese cruce queda eliminado ahí, así que recibe los puntos
+// de esa posición (semifinalista, cuartos, etc.) según la configuración.
+// Si el cruce era la final, además el GANADOR recibe los puntos de campeón.
+// También deja un registro permanente de "partido ganado/perdido" para
+// ambas parejas, que sobrevive aunque el torneo se borre más adelante.
+export function registrarResultadoPartido(state, torneoId, torneoNombre, categoria, rounds, roundIdx, matchIdx, winner, loser){
+  const puntos = getPuntosConfig(state);
+  const totalRounds = rounds.length;
+  const esFinal = roundIdx === totalRounds - 1;
+  const fromEnd = totalRounds - roundIdx;
+  const posicionMap = {1:'subcampeon', 2:'semifinal', 3:'cuartos', 4:'octavos', 5:'dieciseisavos'};
+
+  if(loser && !loser.bye){
+    const posicion = esFinal ? 'subcampeon' : posicionMap[fromEnd];
+    if(posicion) awardPoints(state, torneoId, torneoNombre, categoria, loser.id, puntos[posicion], posicion);
+  }
+  if(esFinal && winner && !winner.bye){
+    awardPoints(state, torneoId, torneoNombre, categoria, winner.id, puntos.campeon, 'campeon');
+  }
+
+  const matchKey = `${torneoId}::${categoria}::${roundIdx}::${matchIdx}`;
+  registrarPartidoJugado(state, matchKey, torneoId, torneoNombre, categoria, winner, loser);
+}
+
+export function roundLabel(idx, total){
+  const fromEnd = total - idx;
+  const map = {1:'FINAL', 2:'SEMIFINALES', 3:'CUARTOS', 4:'OCTAVOS', 5:'16VOS'};
+  return map[fromEnd] || `RONDA ${idx+1}`;
+}
+
+// ============================================================
+// Capa de datos (Supabase) — un único documento JSON en la tabla "torneos"
+// ============================================================
+
+// Migraciones/valores por defecto que se le aplican a cualquier state recién
+// leído, venga de donde venga: de un select() normal (loadState) o de un
+// aviso de Supabase Realtime (ver suscribirseATorneo más abajo) — separado
+// en su propia función para no duplicar esta lista en los dos lugares.
+function normalizarState(state){
+  if(!state.jugadores) state.jugadores = [];
+  if(!state.config) state.config = { puntos: {...DEFAULT_PUNTOS_CONFIG} };
+  if(!state.config.puntos) state.config.puntos = {...DEFAULT_PUNTOS_CONFIG};
+  if(!state.config.categoriasSuma) state.config.categoriasSuma = [...DEFAULT_CATEGORIAS_SUMA];
+  // Compatibilidad con torneos guardados antes de que existiera "partidos" / "inscripcionAbierta"
+  (state.torneos || []).forEach(t=>{
+    if(!t.partidos) t.partidos = [];
+    if(t.inscripcionAbierta === undefined) t.inscripcionAbierta = true;
+    if(t.genero === undefined) t.genero = null; // torneos viejos: sin restricción de género hasta que el admin lo configure
+  });
+  // Completa el historial permanente de partidos ganados/perdidos con los cruces
+  // que ya estaban jugados antes de que existiera este registro (o algún torneo
+  // que se haya guardado sin pasar por registrarResultadoPartido). Así, cuando
+  // se borre un torneo, esos partidos ya quedaron a salvo en cada jugador.
+  backfillHistorialPartidos(state);
+  return state;
+}
+
+export async function loadState(supabase){
+  const { data, error } = await supabase.from('torneos').select('data').eq('id','main').maybeSingle();
+  if(error) throw error;
+  if(data && data.data){
+    return normalizarState(data.data);
+  }
+  const seeded = seedDemoData();
+  await saveState(supabase, seeded);
+  return seeded;
+}
+
+export async function saveState(supabase, state){
+  const { error } = await supabase.from('torneos').upsert({
+    id: 'main', data: state, updated_at: new Date().toISOString()
+  });
+  if(error) throw error;
+}
+
+// ============================================================
+// Sincronización en vivo (Supabase Realtime, con respaldo por polling)
+// ============================================================
+// Antes, cada página preguntaba "¿cambió algo?" cada 2-4 segundos sin parar
+// mientras estuviera abierta (eso es lo que se veía en la pestaña Network
+// del navegador: un pedido tras otro). Acá, en cambio, nos suscribimos una
+// sola vez a los cambios de la fila "main" de la tabla "torneos": Supabase
+// nos avisa por un canal en tiempo real apenas el admin guarda algo, sin que
+// tengamos que estar preguntando nosotros.
+//
+// Para que esto funcione hace falta activar, UNA sola vez, la replicación
+// de esa tabla desde el panel de Supabase (Database → Replication → tildar
+// "torneos"), o correr en el SQL Editor:
+//   alter publication supabase_realtime add table torneos;
+//
+// Por si esa activación no está hecha, o la conexión en tiempo real se corta
+// un rato (puede pasar con redes inestables), dejamos además un chequeo de
+// respaldo bastante espaciado (30s por defecto, mucho menos seguido que
+// antes) para que la página nunca se quede mostrando datos viejos para
+// siempre en el peor de los casos.
+//
+// Devuelve un objeto con:
+//   - detener(): corta la suscripción y el respaldo (no se usa hoy, pero
+//     queda disponible por si en el futuro hiciera falta).
+//   - marcarComoPropio(state): la usa quien GUARDA cambios (ver persist() en
+//     admin.html) para avisar "esto lo acabo de guardar yo, ya lo tengo en
+//     pantalla" — así el eco de tu propio guardado (Supabase también te
+//     avisa a vos cuando guardás) no dispara un re-render de más.
+export function suscribirseATorneo(supabase, onCambio, { fallbackMs = 30000, estadoInicial = null } = {}){
+  let ultimoJson = estadoInicial ? JSON.stringify(estadoInicial) : null;
+
+  function aplicarSiCambio(state){
+    const json = JSON.stringify(state);
+    if(json === ultimoJson) return;
+    ultimoJson = json;
+    onCambio(state);
+  }
+
+  const canal = supabase
+    .channel('torneos-main-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'torneos', filter: 'id=eq.main' }, (payload)=>{
+      if(payload.new && payload.new.data){
+        aplicarSiCambio(normalizarState(payload.new.data));
+      }
+    })
+    .subscribe();
+
+  const intervalId = setInterval(async ()=>{
+    try{
+      aplicarSiCambio(await loadState(supabase));
+    }catch(err){
+      console.error('Error en el chequeo de respaldo:', err);
+    }
+  }, fallbackMs);
+
+  return {
+    detener: ()=>{ supabase.removeChannel(canal); clearInterval(intervalId); },
+    marcarComoPropio: (state)=>{ ultimoJson = JSON.stringify(state); }
+  };
+}
+
+// ============================================================
+// Instalar app (PWA)
+// ============================================================
+// Botón "Instalar app" en la navbar. En Android/Chrome/Edge escuchamos el
+// evento "beforeinstallprompt" que dispara el navegador cuando detecta que
+// el sitio cumple los requisitos (manifest.json + service worker + HTTPS):
+// lo guardamos y recién mostramos el botón ahí, para no mostrar un botón
+// que todavía no puede hacer nada. Al tocarlo, disparamos el diálogo nativo
+// de instalación con ese evento guardado.
+//
+// En iPhone (Safari) ese evento no existe — Apple no lo expone — así que ahí
+// no hay forma de disparar la instalación por código. Lo único que se puede
+// hacer es mostrarle a la persona las instrucciones manuales ("Compartir" →
+// "Agregar a pantalla de inicio"), por eso en iOS mostramos el botón directo
+// y, al tocarlo, abrimos un modal con esos pasos en vez de un prompt nativo.
+//
+// Si la página ya se está ejecutando como app instalada (display-mode:
+// standalone, o navigator.standalone en iOS), ocultamos el botón directamente.
+let _pwaDeferredPrompt = null;
+
+function _pwaEsStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function _pwaEsIOS(){
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent) && !window.MSStream;
+}
+
+// El service worker hace falta siempre — no solo para que el navegador
+// considere el sitio instalable, sino porque además es el que recibe las
+// notificaciones push (ver más abajo). Por eso se registra apenas carga
+// cualquier página, esté instalada como app o no (antes solo se registraba
+// si NO estaba instalada, lo que dejaba sin service worker a alguien que
+// abriera la app ya instalada sin haber pasado antes por el navegador).
+export function registrarServiceWorker(){
+  if('serviceWorker' in navigator){
+    return navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
+  return Promise.resolve(null);
+}
+
+export function setupPwaInstall(){
+  registrarServiceWorker();
+
+  const btn = document.getElementById('btn-instalar-app');
+  if(!btn) return;
+
+  if(_pwaEsStandalone()){
+    btn.style.display = 'none';
+    return;
+  }
+
+  if(_pwaEsIOS()){
+    btn.style.display = 'flex';
+    btn.onclick = ()=>{
+      const modal = document.getElementById('pwa-ios-modal');
+      if(modal) modal.classList.add('open');
+    };
+    const modal = document.getElementById('pwa-ios-modal');
+    const closeBtn = document.getElementById('pwa-ios-close');
+    if(closeBtn) closeBtn.onclick = ()=> modal.classList.remove('open');
+    if(modal){
+      modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.classList.remove('open'); });
+    }
+    return;
+  }
+
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    _pwaDeferredPrompt = e;
+    btn.style.display = 'flex';
+  });
+
+  btn.onclick = async ()=>{
+    if(!_pwaDeferredPrompt) return;
+    _pwaDeferredPrompt.prompt();
+    await _pwaDeferredPrompt.userChoice;
+    _pwaDeferredPrompt = null;
+    btn.style.display = 'none';
+  };
+
+  window.addEventListener('appinstalled', ()=>{
+    btn.style.display = 'none';
+    _pwaDeferredPrompt = null;
+  });
+}
+
+// ============================================================
+// Notificaciones push
+// ============================================================
+// Notificaciones reales del sistema operativo (con sonido, aunque la app
+// esté cerrada), tanto en Android como en iPhone instalada desde Safari
+// (iOS 16.4+). No queda ningún historial guardado: el push se manda una
+// sola vez y listo, la notificación vive y muere en el teléfono de la
+// persona.
+//
+// Clave pública VAPID: identifica a este sitio como emisor válido de
+// notificaciones. No es secreta, va sí o sí en el código del cliente. Su
+// contraparte privada vive SOLO como secreto en la Edge Function
+// "enviar-notificacion" (ver supabase/functions/enviar-notificacion) y
+// nunca debe subirse acá.
+export const VAPID_PUBLIC_KEY = 'BO22rFmxScPI3B8zpbf-5AJffd4_jdNHBWOegVEYbp82CbpC_XET4mJ9k-ohWtv6OkLj-RK-7ho7KwmE-d9aa3M';
+
+function _urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+export function soportaNotificacionesPush(){
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+// Suscripción push activa en ESTE dispositivo/navegador, o null si no hay
+// ninguna (todavía no la activó, o la borró desde los ajustes del sistema).
+export async function obtenerSuscripcionPushActual(){
+  if(!soportaNotificacionesPush()) return null;
+  try{
+    const registration = await navigator.serviceWorker.ready;
+    return await registration.pushManager.getSubscription();
+  }catch(e){
+    return null;
+  }
+}
+
+// Le pide permiso a la persona y, si acepta, la suscribe y guarda la
+// suscripción en Supabase ligada a su cuenta (authId). Tira error si el
+// navegador no soporta push, si la persona no da el permiso, o si falla el
+// guardado — quien llama a esta función es responsable de mostrar ese error
+// (por ejemplo con un alert o un toast).
+export async function activarNotificacionesPush(supabase, authId){
+  if(!soportaNotificacionesPush()){
+    throw new Error('Este navegador no soporta notificaciones push. En iPhone, instalá la app a la pantalla de inicio desde Safari primero.');
+  }
+  const permiso = await Notification.requestPermission();
+  if(permiso !== 'granted'){
+    throw new Error('No se concedió el permiso de notificaciones.');
+  }
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+  if(!subscription){
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+  }
+  const raw = subscription.toJSON();
+  const { error } = await supabase.from('push_subscriptions').upsert({
+    auth_id: authId,
+    endpoint: raw.endpoint,
+    p256dh: raw.keys.p256dh,
+    auth_key: raw.keys.auth,
+  }, { onConflict: 'endpoint' });
+  if(error) throw error;
+  return subscription;
+}
+
+// Da de baja las notificaciones en ESTE dispositivo (no en los demás
+// dispositivos donde la persona las haya activado).
+export async function desactivarNotificacionesPush(supabase){
+  const subscription = await obtenerSuscripcionPushActual();
+  if(!subscription) return;
+  const endpoint = subscription.endpoint;
+  await subscription.unsubscribe().catch(()=>{});
+  await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint).catch(()=>{});
+}
+
+// Dispara el envío real de las notificaciones, delegando en la Edge
+// Function "enviar-notificacion" (ella tiene la clave privada VAPID y hace
+// el envío de verdad). Se llama "en paralelo" al guardado normal del
+// estado — si falla, no debe romper el flujo de la app (por eso quien la
+// usa la llama sin bloquear el resto y logueando el error nomás).
+export async function dispararNotificacion(supabase, { authIds, titulo, cuerpo, url }){
+  const idsUnicos = [...new Set((authIds || []).filter(Boolean))];
+  if(idsUnicos.length === 0) return { ok: true, enviados: 0 };
+  const { data, error } = await supabase.functions.invoke('enviar-notificacion', {
+    body: { authIds: idsUnicos, titulo, cuerpo, url },
+  });
+  if(error) throw error;
+  return data;
+}
+
+// De una lista de ids de jugadores (state.jugadores[].id), devuelve los
+// authId de los que tienen cuenta creada (solo esos pueden tener una
+// suscripción push guardada).
+export function authIdsDeJugadorIds(state, jugadorIds){
+  const jugadores = state.jugadores || [];
+  return (jugadorIds || [])
+    .map(id => jugadores.find(j => j.id === id))
+    .filter(Boolean)
+    .map(j => j.authId)
+    .filter(Boolean);
+}
+
+// Jugadores que "calzan" con un torneo recién abierto a inscripción: misma
+// categoría individual (las categorías "Suma" quedan afuera de este chequeo
+// porque no hay forma de saber si una pareja las cumple a partir de la
+// categoría individual de un solo jugador) y género compatible (si el
+// torneo es masculino/femenino, mismo género del jugador; si es mixto,
+// cualquiera de los dos). Devuelve solo los authId (con cuenta creada).
+export function authIdsElegiblesParaTorneo(state, torneo){
+  const categoriasPlanas = (torneo.categorias || []).filter(c => !isCategoriaSuma(c));
+  if(categoriasPlanas.length === 0) return [];
+  const jugadores = state.jugadores || [];
+  return jugadores
+    .filter(j => j.authId && categoriasPlanas.includes(j.categoria))
+    .filter(j => {
+      if(!torneo.genero || torneo.genero === 'mixto') return true;
+      return j.genero === torneo.genero;
+    })
+    .map(j => j.authId);
+}
